@@ -1,0 +1,28 @@
+# Ignore markdown files as requested
+*.md
+docs/
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories
+.vscode/
+.idea/
+.DS_Store

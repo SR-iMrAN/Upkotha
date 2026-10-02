@@ -1,0 +1,28 @@
+[
+  {
+    "id": "lock_001",
+    "userId": "usr_imran_001",
+    "purpose": "জরুরি সঞ্চয়",
+    "purposeKey": "emergency",
+    "amount": 3000,
+    "currency": "BDT",
+    "status": "LOCKED",
+    "lockedOn": "2026-09-10T11:00:00Z",
+    "lockedOnDisplay": "১০ সেপ্টেম্বর ২০২৬",
+    "reason": "জরুরি চিকিৎসার জন্য আলাদা রাখা টাকা",
+    "icon": "🏥"
+  },
+  {
+    "id": "lock_002",
+    "userId": "usr_imran_001",
+    "purpose": "বাড়িভাড়া",
+    "purposeKey": "rent",
+    "amount": 2000,
+    "currency": "BDT",
+    "status": "LOCKED",
+    "lockedOn": "2026-10-01T08:00:00Z",
+    "lockedOnDisplay": "০১ অক্টোবর ২০২৬",
+    "reason": "অক্টোবর মাসের বাড়িভাড়া সুরক্ষিত রাখা",
+    "icon": "🏠"
+  }
+]

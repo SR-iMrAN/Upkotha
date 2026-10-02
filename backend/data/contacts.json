@@ -1,0 +1,46 @@
+[
+  {
+    "id": "c1",
+    "userId": "usr_imran_001",
+    "name": "রাকিব",
+    "alias": "Rakib",
+    "phone": "01798-765432",
+    "relation": "Friend",
+    "avatar": "র",
+    "isFavorite": true,
+    "lastTransacted": "2026-10-02"
+  },
+  {
+    "id": "c2",
+    "userId": "usr_imran_001",
+    "name": "সাকিব",
+    "alias": "Sakib",
+    "phone": "01812-345678",
+    "relation": "Colleague",
+    "avatar": "স",
+    "isFavorite": true,
+    "lastTransacted": "2026-09-20"
+  },
+  {
+    "id": "c3",
+    "userId": "usr_imran_001",
+    "name": "নাদিয়া",
+    "alias": "Nadia",
+    "phone": "01934-567890",
+    "relation": "Sister",
+    "avatar": "ন",
+    "isFavorite": false,
+    "lastTransacted": "2026-07-14"
+  },
+  {
+    "id": "c4",
+    "userId": "usr_imran_001",
+    "name": "মা",
+    "alias": "Mother",
+    "phone": "01711-223344",
+    "relation": "Family",
+    "avatar": "ম",
+    "isFavorite": true,
+    "lastTransacted": "2026-10-01"
+  }
+]

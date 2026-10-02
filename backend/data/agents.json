@@ -1,0 +1,32 @@
+[
+  {
+    "id": "ag1",
+    "name": "রহিম স্টোর",
+    "alias": "Rahim Store",
+    "agentCode": "AG-10928",
+    "phone": "01553-456789",
+    "area": "মোহাম্মদপুর, ঢাকা",
+    "verified": true,
+    "feeRate": 0.01
+  },
+  {
+    "id": "ag2",
+    "name": "করিম এজেন্ট পয়েন্ট",
+    "alias": "Karim Agent Point",
+    "agentCode": "AG-10929",
+    "phone": "01653-987654",
+    "area": "মিরপুর-১০, ঢাকা",
+    "verified": true,
+    "feeRate": 0.01
+  },
+  {
+    "id": "ag3",
+    "name": "শহীদ ট্রেডার্স",
+    "alias": "Shohid Traders",
+    "agentCode": "AG-10930",
+    "phone": "01753-112233",
+    "area": "ধানমন্ডি, ঢাকা",
+    "verified": true,
+    "feeRate": 0.01
+  }
+]

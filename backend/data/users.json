@@ -1,0 +1,16 @@
+[
+  {
+    "id": "usr_imran_001",
+    "name": "ইমরান",
+    "phone": "01712-345678",
+    "pin": "1234",
+    "availableBalance": 13500,
+    "lockedBalance": 5000,
+    "totalBalance": 18500,
+    "currency": "BDT",
+    "isStrictMode": false,
+    "accountType": "Personal",
+    "kycVerified": true,
+    "registeredAt": "2025-06-15T10:00:00Z"
+  }
+]

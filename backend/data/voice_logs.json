@@ -1,0 +1,49 @@
+[
+  {
+    "id": "vlog_001",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T14:14:30Z",
+    "rawTranscript": "রাকিবকে ৫০০ টাকা পাঠাও",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.96,
+    "entities": {
+      "recipient": "Rakib",
+      "amount": 500,
+      "currency": "BDT"
+    },
+    "status": "EXECUTED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_002",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T11:00:00Z",
+    "rawTranscript": "আমার balance কত",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "check_balance",
+    "confidence": 0.98,
+    "entities": {},
+    "status": "ANSWERED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_003",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-01T15:20:00Z",
+    "rawTranscript": "রহিম স্টোর থেকে ২০০০ টাকা cash out করতে চাই",
+    "language": "bn-BD",
+    "pageContext": "cash_out",
+    "intent": "cash_out",
+    "confidence": 0.94,
+    "entities": {
+      "agent": "Rahim Store",
+      "amount": 2000,
+      "currency": "BDT"
+    },
+    "status": "EXECUTED",
+    "privacyCompliant": true
+  }
+]

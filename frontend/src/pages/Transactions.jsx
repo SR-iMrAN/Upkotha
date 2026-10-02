@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import TransactionCard from '../components/TransactionCard';
+import VoiceGuide from '../components/VoiceGuide';
 import { useAuth } from '../context/AuthContext';
 import { showExplainModal, showToast } from '../utils/alert';
 import { SYNTHETIC_TRANSACTIONS } from '../data/syntheticData';
@@ -85,19 +86,10 @@ export default function Transactions() {
     >
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Contextual Voice Guide */}
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 shadow-xs">
-          <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
-            <Volume2 className="w-5 h-5 text-emerald-700" />
-          </div>
-          <div className="text-xs">
-            <span className="font-semibold text-emerald-900 block mb-0.5">
-              উপকথা ভয়েস গাইড (Contextual Voice Guide)
-            </span>
-            <p className="text-emerald-800 leading-relaxed font-normal">
-              "আপনি চাইলে যেকোনো transaction সম্পর্কে আমাকে জিজ্ঞেস করতে পারেন।"
-            </p>
-          </div>
-        </div>
+        <VoiceGuide
+          pageContext="transactions"
+          message="আপনি চাইলে যেকোনো transaction সম্পর্কে আমাকে জিজ্ঞেস করতে পারেন।"
+        />
 
         {/* Financial Flow Snapshot */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

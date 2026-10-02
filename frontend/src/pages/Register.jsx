@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Phone, Lock, Volume2, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import VoiceGuide from '../components/VoiceGuide';
 import { showToast } from '../utils/alert';
 
 export default function Register() {
@@ -69,20 +70,12 @@ export default function Register() {
 
       {/* Main Register Card */}
       <div className="max-w-md w-full mx-auto my-auto bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-8">
-        {/* Contextual Voice Guide Banner */}
-        <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
-            <Volume2 className="w-4 h-4" />
-          </div>
-          <div className="text-xs">
-            <span className="font-semibold text-emerald-900 block mb-0.5">
-              উপকথা ভয়েস গাইড:
-            </span>
-            <p className="text-emerald-800 font-normal leading-relaxed">
-              "স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে account তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।"
-            </p>
-          </div>
-        </div>
+        {/* Contextual Voice Guide */}
+        <VoiceGuide
+          pageContext="register"
+          message="স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে account তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।"
+          className="mb-6"
+        />
 
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-slate-900">নিবন্ধন করুন</h2>

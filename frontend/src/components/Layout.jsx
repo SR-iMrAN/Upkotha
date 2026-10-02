@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import VoiceCommand from './VoiceCommand';
 
 /**
  * Layout: Master layout wrapper for all authenticated application routes
@@ -43,6 +44,9 @@ export default function Layout({
           UPKOTHA (উপকথা) • সহজ ভাষায়, বুদ্ধিমানভাবে, নিরাপদে ডিজিটাল ফাইন্যান্স
         </footer>
       </div>
+
+      {/* Omnipresent Floating Voice Assistant Mic */}
+      <VoiceCommand floating={true} />
     </div>
   );
 }

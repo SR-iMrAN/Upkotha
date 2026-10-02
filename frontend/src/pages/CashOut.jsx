@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import ConfirmationModal from '../components/ConfirmationModal';
+import VoiceGuide from '../components/VoiceGuide';
 import { useAuth } from '../context/AuthContext';
 import { showToast, showAlert } from '../utils/alert';
 import api from '../services/api';
@@ -147,20 +148,11 @@ export default function CashOut() {
       userName={user?.name}
     >
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Contextual Voice Guide Banner */}
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-start gap-3 shadow-xs">
-          <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
-            <Volume2 className="w-5 h-5 text-emerald-700" />
-          </div>
-          <div className="text-xs">
-            <span className="font-semibold text-emerald-900 block mb-0.5">
-              উপকথা ভয়েস গাইড (Contextual Voice Guide)
-            </span>
-            <p className="text-emerald-800 leading-relaxed font-normal">
-              "Cash Out করতে agent নির্বাচন করুন এবং amount বলুন।"
-            </p>
-          </div>
-        </div>
+        {/* Contextual Voice Guide */}
+        <VoiceGuide
+          pageContext="cash_out"
+          message="Cash Out করতে agent নির্বাচন করুন এবং amount বলুন।"
+        />
 
         {/* Balance Awareness Banner */}
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">

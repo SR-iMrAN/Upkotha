@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Phone, Volume2, Sparkles, ShieldCheck, ArrowRight, UserCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import VoiceGuide from '../components/VoiceGuide';
 import { showToast, showAlert } from '../utils/alert';
 
 export default function Login() {
@@ -67,20 +68,12 @@ export default function Login() {
 
       {/* Main Login Card */}
       <div className="max-w-md w-full mx-auto my-auto bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-8">
-        {/* Contextual Voice Guide Banner */}
-        <div className="mb-6 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800 shrink-0 mt-0.5">
-            <Volume2 className="w-4 h-4" />
-          </div>
-          <div className="text-xs">
-            <span className="font-semibold text-emerald-900 block mb-0.5">
-              উপকথা ভয়েস গাইড:
-            </span>
-            <p className="text-emerald-800 font-normal leading-relaxed">
-              "আপনার মোবাইল নম্বর দিন। এরপর PIN ব্যবহার করে login করুন।"
-            </p>
-          </div>
-        </div>
+        {/* Contextual Voice Guide */}
+        <VoiceGuide
+          pageContext="login"
+          message="আপনার মোবাইল নম্বর দিন। এরপর PIN ব্যবহার করে login করুন।"
+          className="mb-6"
+        />
 
         <div className="mb-6 text-center">
           <h2 className="text-2xl font-bold text-slate-900">লগইন করুন</h2>

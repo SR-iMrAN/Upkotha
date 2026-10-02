@@ -21,6 +21,8 @@ import BalanceCard from '../components/BalanceCard';
 import TransactionCard from '../components/TransactionCard';
 import AIInsightCard from '../components/AIInsightCard';
 import ReminderCard from '../components/ReminderCard';
+import VoiceGuide from '../components/VoiceGuide';
+import VoiceCommand from '../components/VoiceCommand';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
 import { showToast, showExplainModal } from '../utils/alert';
@@ -133,25 +135,11 @@ export default function Dashboard() {
     >
       <div className="space-y-6 pb-8">
 
-        {/* ─── Voice Guide Contextual Banner ──────────────────────── */}
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-900 to-slate-900 text-white flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600/40 border border-emerald-400/30 flex items-center justify-center shrink-0">
-              <Volume2 className="w-5 h-5 text-emerald-300" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-emerald-300 mb-0.5">উপকথা ভয়েস গাইড</p>
-              <p className="text-sm text-emerald-50 leading-snug">
-                আপনার available balance <strong>৳ {new Intl.NumberFormat('bn-BD').format(user?.availableBalance || 13500)}</strong>। চাইলে আজকের transaction অথবা reminder দেখতে পারেন।
-              </p>
-            </div>
-          </div>
-          <Link to="/voice">
-            <Button variant="subtle" size="sm" icon={Mic} className="bg-emerald-600/20 text-emerald-100 border-emerald-500/30 hover:bg-emerald-600/40 shrink-0">
-              ভয়েস রুম
-            </Button>
-          </Link>
-        </div>
+        {/* ─── Voice Guide Contextual Component ──────────────────────── */}
+        <VoiceGuide
+          pageContext="dashboard"
+          message={`আপনার available balance ${new Intl.NumberFormat('bn-BD').format(user?.availableBalance || 13500)} টাকা। চাইলে আজকের transaction অথবা reminder দেখতে পারেন।`}
+        />
 
         {/* ─── Balance Card ───────────────────────────────────────── */}
         <BalanceCard
@@ -186,6 +174,9 @@ export default function Dashboard() {
             <QuickActionCard icon={Mic}           label="ভয়েস রুম"   to="/voice"      color="slate"   />
           </div>
         </section>
+
+        {/* ─── Inline Voice Command Bar ────────────────────────────── */}
+        <VoiceCommand pageContext="dashboard" />
 
         {/* ─── AI Insights ─────────────────────────────────────────── */}
         {visibleInsights.length > 0 && (

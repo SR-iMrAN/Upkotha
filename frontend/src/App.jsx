@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { VoiceProvider } from './context/VoiceContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -10,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import SendMoney from './pages/SendMoney';
 import CashOut from './pages/CashOut';
 import Transactions from './pages/Transactions';
+import Voice from './pages/Voice';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -138,89 +140,91 @@ function Home() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/design-system" element={<DesignSystemShowcase />} />
+      <VoiceProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/design-system" element={<DesignSystemShowcase />} />
 
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/send-money"
-            element={
-              <ProtectedRoute>
-                <SendMoney />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cash-out"
-            element={
-              <ProtectedRoute>
-                <CashOut />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <Transactions />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/lock-money"
-            element={
-              <ProtectedRoute>
-                <DesignSystemShowcase />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reminders"
-            element={
-              <ProtectedRoute>
-                <DesignSystemShowcase />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/strict-mode"
-            element={
-              <ProtectedRoute>
-                <DesignSystemShowcase />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/voice"
-            element={
-              <ProtectedRoute>
-                <DesignSystemShowcase />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </Router>
+            {/* Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/send-money"
+              element={
+                <ProtectedRoute>
+                  <SendMoney />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cash-out"
+              element={
+                <ProtectedRoute>
+                  <CashOut />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lock-money"
+              element={
+                <ProtectedRoute>
+                  <DesignSystemShowcase />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reminders"
+              element={
+                <ProtectedRoute>
+                  <DesignSystemShowcase />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/strict-mode"
+              element={
+                <ProtectedRoute>
+                  <DesignSystemShowcase />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/voice"
+              element={
+                <ProtectedRoute>
+                  <Voice />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Router>
+      </VoiceProvider>
     </AuthProvider>
   );
 }

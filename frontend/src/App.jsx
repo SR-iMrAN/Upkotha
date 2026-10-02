@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Dashboard from './pages/Dashboard';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -147,7 +148,7 @@ export default function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DesignSystemShowcase />
+                <Dashboard />
               </ProtectedRoute>
             }
           />

@@ -293,5 +293,11 @@ export const commitTransaction = ({
       isSimulated: true,
       explanationBangla,
     },
+    transaction: transactionRecord,
+    newBalance: {
+      available: updatedAvailable,
+      locked: user.lockedBalance,
+      total: updatedAvailable + user.lockedBalance,
+    },
   };
 };

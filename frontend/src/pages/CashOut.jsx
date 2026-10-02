@@ -94,11 +94,29 @@ export default function CashOut() {
         pin,
       });
 
-      setIsModalOpen(false);
-      setReceipt(res.receipt);
+      const agentName = stagedData?.recipient || selectedAgent?.name || 'এজেন্ট পয়েন্ট';
+      const actualAmount = stagedData?.amount || numAmount;
+      const actualFee = stagedData?.fee ?? estimatedFee;
+      const totalDeduct = actualAmount + actualFee;
 
-      // Update live balances in AuthContext
-      updateBalance(res.receipt.newAvailableBalance, res.receipt.lockedBalance);
+      const receiptData = res?.receipt || {
+        transactionId: res?.transaction?.id || `TXN-${Date.now().toString().slice(-6)}`,
+        recipient: res?.transaction?.recipient || agentName,
+        amount: res?.transaction?.amount || actualAmount,
+        fee: res?.transaction?.fee ?? actualFee,
+        totalDeduction: totalDeduct,
+        newAvailableBalance: res?.newBalance?.available ?? (user?.availableBalance - totalDeduct),
+        lockedBalance: res?.newBalance?.locked ?? user?.lockedBalance,
+        dateDisplay: res?.transaction?.dateDisplay || 'আজ, এইমাত্র',
+        explanationBangla: res?.transaction?.explanationBangla || `${agentName} থেকে ৳${actualAmount} টাকা ক্যাশ আউট সম্পন্ন হয়েছে।`,
+      };
+
+      setIsModalOpen(false);
+      setReceipt(receiptData);
+
+      if (receiptData?.newAvailableBalance !== undefined) {
+        updateBalance(receiptData.newAvailableBalance, receiptData.lockedBalance);
+      }
       showToast.success('ক্যাশ আউট সফল হয়েছে!');
     } catch (err) {
       showAlert({

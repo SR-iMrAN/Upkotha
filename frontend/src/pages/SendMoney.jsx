@@ -91,11 +91,27 @@ export default function SendMoney() {
         pin,
       });
 
-      setIsModalOpen(false);
-      setReceipt(res.receipt);
+      const targetRecipient = stagedData?.recipient || recipient || 'প্রাপক';
+      const actualAmount = stagedData?.amount || Number(amount);
 
-      // Update AuthContext live balance
-      updateBalance(res.receipt.newAvailableBalance, res.receipt.lockedBalance);
+      const receiptData = res?.receipt || {
+        transactionId: res?.transaction?.id || `TXN-${Date.now().toString().slice(-6)}`,
+        recipient: res?.transaction?.recipient || targetRecipient,
+        amount: res?.transaction?.amount || actualAmount,
+        fee: 0,
+        totalDeduction: actualAmount,
+        newAvailableBalance: res?.newBalance?.available ?? (user?.availableBalance - actualAmount),
+        lockedBalance: res?.newBalance?.locked ?? user?.lockedBalance,
+        dateDisplay: res?.transaction?.dateDisplay || 'আজ, এইমাত্র',
+        explanationBangla: res?.transaction?.explanationBangla || `${targetRecipient}-কে ৳${actualAmount} টাকা সফলভাবে পাঠানো হয়েছে।`,
+      };
+
+      setIsModalOpen(false);
+      setReceipt(receiptData);
+
+      if (receiptData?.newAvailableBalance !== undefined) {
+        updateBalance(receiptData.newAvailableBalance, receiptData.lockedBalance);
+      }
       showToast.success('লেনদেন সফলভাবে সম্পন্ন হয়েছে!');
     } catch (err) {
       showAlert({

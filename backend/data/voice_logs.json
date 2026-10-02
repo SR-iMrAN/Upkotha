@@ -1,5 +1,82 @@
 [
   {
+    "id": "vlog_1790970835949",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T19:53:55.949Z",
+    "rawTranscript": "আমি করিম এজেন্ট পয়েন্ট থেকে ৳115 ক্যাশ আউট করতে চাই।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "cash_out",
+    "confidence": 0.94,
+    "entities": {
+      "agent": "করিম এজেন্ট পয়েন্ট",
+      "amount": 115,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790970611287",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T19:50:11.287Z",
+    "rawTranscript": "আমি ক্যাশ আউট করতে চাই।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "cash_out",
+    "confidence": 0.94,
+    "entities": {
+      "agent": "রহিম স্টোর",
+      "amount": 2000,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790970505726",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T19:48:25.726Z",
+    "rawTranscript": "রাকিবকে ৳500 পাঠাও।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": "রাকিব",
+      "amount": 500,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790970476628",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T19:47:56.628Z",
+    "rawTranscript": "আমার ব্যালেন্স কত আছে?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "check_balance",
+    "confidence": 0.98,
+    "entities": {},
+    "status": "PROCESSED",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790970255893",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T19:44:15.893Z",
+    "rawTranscript": "আমার balance কত?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "check_balance",
+    "confidence": 0.98,
+    "entities": {},
+    "status": "PROCESSED",
+    "privacyCompliant": true
+  },
+  {
     "id": "vlog_1790958809499",
     "userId": "usr_imran_001",
     "timestamp": "2026-10-02T16:33:29.499Z",

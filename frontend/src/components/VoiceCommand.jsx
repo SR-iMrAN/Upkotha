@@ -158,7 +158,17 @@ export default function VoiceCommand({
                       <span className="text-sm font-bold text-slate-800">"{transcript}"</span>
                     </div>
                   ) : (
-                    <span>মাইক চাপুন অথবা নিচের উদাহরণে ক্লিক করুন</span>
+                    <div className="space-y-2 py-1">
+                      <p className="text-slate-600">মাইক্রোফোন প্রস্তুত। কথা বলতে নিচের বাটনে চাপুন অথবা সরাসরি উদাহরণে ক্লিক করুন:</p>
+                      <button
+                        type="button"
+                        onClick={startListening}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold transition"
+                      >
+                        <Mic className="w-3.5 h-3.5" />
+                        <span>শুনতে শুরু করুন</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

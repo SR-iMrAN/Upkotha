@@ -1,5 +1,22 @@
 [
   {
+    "id": "TXN-329492",
+    "userId": "usr_imran_001",
+    "title": "রহিম স্টোর (Cash Out)",
+    "recipient": "রহিম স্টোর",
+    "type": "cash_out",
+    "amount": 2000,
+    "fee": 20,
+    "currency": "BDT",
+    "date": "2026-10-02T17:15:29.492Z",
+    "dateDisplay": "আজ, এইমাত্র",
+    "category": "ক্যাশ আউট",
+    "categoryKey": "cash_out",
+    "status": "COMPLETED",
+    "month": "2026-10",
+    "explanationBangla": "রহিম স্টোর এজেন্ট পয়েন্ট থেকে ৳2000 টাকা ক্যাশ আউট সফল হয়েছে। ফি: ৳20।"
+  },
+  {
     "id": "TXN-2026-001",
     "userId": "usr_imran_001",
     "title": "রাকিব (Send Money)",

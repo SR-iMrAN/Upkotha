@@ -7,6 +7,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Dashboard from './pages/Dashboard';
+import SendMoney from './pages/SendMoney';
+import CashOut from './pages/CashOut';
+import Transactions from './pages/Transactions';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -143,7 +146,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/design-system" element={<DesignSystemShowcase />} />
 
-          {/* Protected Routes (Requiring Authentication) */}
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -164,7 +167,7 @@ export default function App() {
             path="/send-money"
             element={
               <ProtectedRoute>
-                <DesignSystemShowcase />
+                <SendMoney />
               </ProtectedRoute>
             }
           />
@@ -172,20 +175,20 @@ export default function App() {
             path="/cash-out"
             element={
               <ProtectedRoute>
-                <DesignSystemShowcase />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/lock-money"
-            element={
-              <ProtectedRoute>
-                <DesignSystemShowcase />
+                <CashOut />
               </ProtectedRoute>
             }
           />
           <Route
             path="/transactions"
+            element={
+              <ProtectedRoute>
+                <Transactions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lock-money"
             element={
               <ProtectedRoute>
                 <DesignSystemShowcase />

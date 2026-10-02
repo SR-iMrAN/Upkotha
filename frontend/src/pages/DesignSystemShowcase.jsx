@@ -6,6 +6,7 @@ import TransactionCard from '../components/TransactionCard';
 import AIInsightCard from '../components/AIInsightCard';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Send, ArrowDownToLine, Lock, Check, Sparkles, AlertCircle } from 'lucide-react';
+import { showToast, showAlert, showExplainModal } from '../utils/alert';
 
 export default function DesignSystemShowcase() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,14 +115,14 @@ export default function DesignSystemShowcase() {
               title="উপকথার পর্যবেক্ষণ"
               message="আপনার electricity payment সাধারণত মাসের ৫ তারিখের দিকে হয়। প্রস্তুত রাখতে আপনার available balance পর্যাপ্ত আছে।"
               actionLabel="রিমাইন্ডার দেখুন"
-              onAction={() => alert('রিমাইন্ডারে নেভিগেট')}
+              onAction={() => showToast.info('বিল ও রিমাইন্ডার পেজে রিডাইরেক্ট করা হচ্ছে')}
             />
             <AIInsightCard
               type="warning"
               title="খরচের সতর্কতা"
               message="এই মাসে ক্যাশ-আউট খরচ গত মাসের চেয়ে ১৮% বেশি। সঞ্চয় বাড়াতে মানি লক ব্যবহার করতে পারেন।"
               actionLabel="টাকা লক করুন"
-              onAction={() => alert('মানি লক স্ক্রিনে নেওয়া হচ্ছে')}
+              onAction={() => showToast.warning('মানি লক সেকশনে নেওয়া হচ্ছে')}
             />
           </div>
         </div>
@@ -139,7 +140,11 @@ export default function DesignSystemShowcase() {
               <TransactionCard
                 key={txn.id}
                 transaction={txn}
-                onExplain={(t) => alert(`উপকথা ব্যাখ্যা: "${t.title} বাবদ ৳${t.amount} টাকা লেনদেন সম্পন্ন হয়েছে।"`)}
+                onExplain={(t) => showExplainModal({
+                  title: t.title,
+                  explanation: `আপনার এই লেনদেনটি ${t.date} সফলভাবে সম্পন্ন হয়েছে। ${t.recipient} বাবদ মোট ৳${t.amount} টাকা কর্তন করা হয়েছে এবং কোনো অতিরিক্ত চার্জ নেওয়া হয়নি।`,
+                  transactionId: t.id,
+                })}
               />
             ))}
           </div>
@@ -163,7 +168,7 @@ export default function DesignSystemShowcase() {
             <Button
               variant="secondary"
               icon={ArrowDownToLine}
-              onClick={() => alert('Secondary Action')}
+              onClick={() => showToast.info('সেকেন্ডারি অ্যাকশন ট্রিগার হয়েছে')}
             >
               সেকেন্ডারি বাটন
             </Button>
@@ -171,7 +176,7 @@ export default function DesignSystemShowcase() {
             <Button
               variant="outline"
               icon={Lock}
-              onClick={() => alert('Outline Action')}
+              onClick={() => showToast.success('আউটলাইন বাটন ক্লিক হয়েছে')}
             >
               আউটলাইন বাটন
             </Button>
@@ -179,7 +184,7 @@ export default function DesignSystemShowcase() {
             <Button
               variant="subtle"
               icon={Sparkles}
-              onClick={() => alert('Subtle Action')}
+              onClick={() => showToast.success('সাবটল এআই বাটন অ্যাক্টিভ')}
             >
               সাবটল এআই বাটন
             </Button>
@@ -187,7 +192,11 @@ export default function DesignSystemShowcase() {
             <Button
               variant="danger"
               size="sm"
-              onClick={() => alert('Danger Action')}
+              onClick={() => showAlert({
+                title: 'সতর্কতা বার্তা',
+                text: 'এটি একটি সুইটঅ্যালার্ট পরীক্ষামূলক ডেঞ্জার নোটিফিকেশন।',
+                icon: 'warning',
+              })}
             >
               সতর্কতামূলক
             </Button>

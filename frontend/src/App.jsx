@@ -1,10 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, ShieldCheck, Wallet } from 'lucide-react';
+import { Sparkles, ArrowRight, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Profile from './pages/Profile';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
 function Home() {
+  const { isAuthenticated, user } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       {/* Header */}
@@ -21,17 +28,33 @@ function Home() {
           </div>
         </div>
 
-        <div className="flex-none gap-3">
+        <div className="flex-none gap-2 sm:gap-3">
           <Link to="/design-system">
             <Button variant="outline" size="sm">
               ডিজাইন সিস্টেম
             </Button>
           </Link>
-          <Link to="/dashboard">
-            <Button variant="primary" size="sm" icon={ArrowRight}>
-              প্রবেশ করুন
-            </Button>
-          </Link>
+
+          {isAuthenticated ? (
+            <Link to="/dashboard">
+              <Button variant="primary" size="sm" icon={LayoutDashboard}>
+                ড্যাশবোর্ড ({user?.name || 'ইমরান'})
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="secondary" size="sm" icon={LogIn}>
+                  লগইন
+                </Button>
+              </Link>
+              <Link to="/register" className="hidden sm:inline-flex">
+                <Button variant="primary" size="sm" icon={UserPlus}>
+                  নিবন্ধন
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -75,13 +98,28 @@ function Home() {
           </div>
         </div>
 
-        {/* Call to action */}
-        <div className="flex gap-4 items-center">
-          <Link to="/design-system">
-            <Button variant="primary" size="lg" icon={ArrowRight}>
-              ডিজাইন সিস্টেম ও কম্পোনেন্ট লাইব্রেরি দেখুন
-            </Button>
-          </Link>
+        {/* Primary Call to Action */}
+        <div className="flex flex-wrap gap-4 items-center justify-center">
+          {isAuthenticated ? (
+            <Link to="/dashboard">
+              <Button variant="primary" size="lg" icon={ArrowRight}>
+                আপনার ড্যাশবোর্ডে প্রবেশ করুন
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="primary" size="lg" icon={ArrowRight}>
+                  ডেমো ওয়ালেটে প্রবেশ করুন
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="outline" size="lg">
+                  নতুন অ্যাকাউন্ট নিবন্ধন
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </main>
 
@@ -95,20 +133,90 @@ function Home() {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/design-system" element={<DesignSystemShowcase />} />
-        <Route path="/dashboard" element={<DesignSystemShowcase />} />
-        <Route path="/send-money" element={<DesignSystemShowcase />} />
-        <Route path="/cash-out" element={<DesignSystemShowcase />} />
-        <Route path="/lock-money" element={<DesignSystemShowcase />} />
-        <Route path="/transactions" element={<DesignSystemShowcase />} />
-        <Route path="/reminders" element={<DesignSystemShowcase />} />
-        <Route path="/strict-mode" element={<DesignSystemShowcase />} />
-        <Route path="/voice" element={<DesignSystemShowcase />} />
-        <Route path="/profile" element={<DesignSystemShowcase />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/design-system" element={<DesignSystemShowcase />} />
+
+          {/* Protected Routes (Requiring Authentication) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/send-money"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cash-out"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lock-money"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reminders"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/strict-mode"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/voice"
+            element={
+              <ProtectedRoute>
+                <DesignSystemShowcase />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }

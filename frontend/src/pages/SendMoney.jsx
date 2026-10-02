@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -26,6 +26,7 @@ const QUICK_AMOUNTS = [100, 500, 1000, 2000, 5000];
 export default function SendMoney() {
   const { user, toggleStrictMode, updateBalance } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [recipient, setRecipient] = useState('');
   const [selectedContact, setSelectedContact] = useState(null);
@@ -47,16 +48,18 @@ export default function SendMoney() {
     showToast.info(`${contact.name} নির্বাচন করা হয়েছে`);
   };
 
-  const handleValidate = async (e) => {
-    e.preventDefault();
+  const handleValidate = async (e, overrideRecipient, overrideAmount) => {
+    if (e && e.preventDefault) e.preventDefault();
 
-    if (!recipient.trim()) {
+    const targetRecipient = (overrideRecipient !== undefined ? overrideRecipient : recipient) || '';
+    const targetAmount = overrideAmount !== undefined ? Number(overrideAmount) : Number(amount);
+
+    if (!targetRecipient.trim()) {
       showToast.error('প্রাপকের নাম বা মোবাইল নম্বর দিন');
       return;
     }
 
-    const numAmount = Number(amount);
-    if (!numAmount || numAmount <= 0) {
+    if (!targetAmount || targetAmount <= 0) {
       showToast.error('সঠিক টাকার পরিমাণ দিন');
       return;
     }
@@ -65,8 +68,8 @@ export default function SendMoney() {
       setIsValidating(true);
       const res = await api.validateTransaction({
         type: 'send_money',
-        recipient: recipient.trim(),
-        amount: numAmount,
+        recipient: targetRecipient.trim(),
+        amount: targetAmount,
       });
 
       setStagedData(res);
@@ -81,6 +84,39 @@ export default function SendMoney() {
       setIsValidating(false);
     }
   };
+
+  // Handle voice command prefill
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const { recipient: prefillRecipient, amount: prefillAmount } = location.state.prefill;
+      let matchedContact = null;
+
+      if (prefillRecipient) {
+        setRecipient(prefillRecipient);
+        if (user?.contacts) {
+          matchedContact = user.contacts.find(
+            (c) =>
+              c.name.toLowerCase().includes(prefillRecipient.toLowerCase()) ||
+              prefillRecipient.toLowerCase().includes(c.name.toLowerCase()) ||
+              c.phone.replace(/[^0-9]/g, '') === prefillRecipient.replace(/[^0-9]/g, '')
+          );
+          if (matchedContact) {
+            setSelectedContact(matchedContact);
+          }
+        }
+      }
+
+      if (prefillAmount) {
+        setAmount(String(prefillAmount));
+      }
+
+      showToast.info('ভয়েস কমান্ড থেকে তথ্য পূরণ করা হয়েছে');
+
+      if (prefillRecipient && prefillAmount) {
+        handleValidate(null, prefillRecipient, prefillAmount);
+      }
+    }
+  }, [location.state, user?.contacts]);
 
   const handleConfirmPin = async (pin) => {
     try {

@@ -11,13 +11,14 @@
     "lastPaid": "০৫ সেপ্টেম্বর ২০২৬",
     "lastAmount": 1250,
     "daysUntil": 3,
-    "status": "UPCOMING",
-    "statusBangla": "আসন্ন",
+    "status": "COMPLETED",
+    "statusBangla": "সম্পন্ন",
     "meterNo": "0192837461",
     "isRecurring": true,
     "frequency": "monthly",
     "detectedPattern": "মাসের ৫ থেকে ৬ তারিখের মধ্যে বিল আসে",
-    "icon": "⚡"
+    "icon": "⚡",
+    "completedAt": "2026-10-02T21:03:55.473Z"
   },
   {
     "id": "rem_002",
@@ -31,13 +32,14 @@
     "lastPaid": "১০ সেপ্টেম্বর ২০২৬",
     "lastAmount": 600,
     "daysUntil": 8,
-    "status": "UPCOMING",
-    "statusBangla": "আসন্ন",
+    "status": "COMPLETED",
+    "statusBangla": "সম্পন্ন",
     "subscriberId": "L3-889912",
     "isRecurring": true,
     "frequency": "monthly",
     "detectedPattern": "প্রতি মাসের ১০ তারিখে নিয়মিত বিল",
-    "icon": "📡"
+    "icon": "📡",
+    "completedAt": "2026-10-02T21:03:57.711Z"
   },
   {
     "id": "rem_003",
@@ -51,11 +53,12 @@
     "lastPaid": "০১ অক্টোবর ২০২৬",
     "lastAmount": 2000,
     "daysUntil": 30,
-    "status": "PLANNED",
-    "statusBangla": "পরিকল্পিত",
+    "status": "COMPLETED",
+    "statusBangla": "সম্পন্ন",
     "isRecurring": true,
     "frequency": "monthly",
     "detectedPattern": "প্রতি মাসের শুরুতে ১ তারিখে সহায়তা",
-    "icon": "💝"
+    "icon": "💝",
+    "completedAt": "2026-10-02T21:04:00.318Z"
   }
 ]

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -32,6 +32,7 @@ const QUICK_AMOUNTS = [500, 1000, 2000, 3000, 5000];
 export default function CashOut() {
   const { user, toggleStrictMode, updateBalance } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [selectedAgent, setSelectedAgent] = useState(AGENTS[0]);
   const [customAgent, setCustomAgent] = useState('');
@@ -45,6 +46,35 @@ export default function CashOut() {
 
   // Receipt state
   const [receipt, setReceipt] = useState(null);
+
+  // Handle voice command prefill
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const { agent: prefillAgent, recipient: prefillRecipient, amount: prefillAmount } = location.state.prefill;
+      const targetAgent = prefillAgent || prefillRecipient;
+
+      if (targetAgent) {
+        const matched = AGENTS.find(
+          (a) =>
+            a.name.toLowerCase().includes(targetAgent.toLowerCase()) ||
+            targetAgent.toLowerCase().includes(a.name.toLowerCase()) ||
+            a.code.toLowerCase() === targetAgent.toLowerCase()
+        );
+        if (matched) {
+          setSelectedAgent(matched);
+          setCustomAgent('');
+        } else {
+          setCustomAgent(targetAgent);
+        }
+      }
+
+      if (prefillAmount) {
+        setAmount(String(prefillAmount));
+      }
+
+      showToast.info('ভয়েস কমান্ড থেকে তথ্য পূরণ করা হয়েছে');
+    }
+  }, [location.state]);
 
   const numAmount = Number(amount) || 0;
   const estimatedFee = Math.round(numAmount * 0.01);

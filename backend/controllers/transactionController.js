@@ -1,5 +1,6 @@
 import db from '../dataStore.js';
 import { stageTransaction, commitTransaction } from '../services/transactionEngine.js';
+import { explainTransactionWithGemini } from '../services/geminiService.js';
 
 export const getTransactions = (req, res, next) => {
   try {
@@ -116,7 +117,7 @@ export const executeCashOut = (req, res, next) => {
   }
 };
 
-export const explainTransaction = (req, res, next) => {
+export const explainTransaction = async (req, res, next) => {
   try {
     const { id } = req.params;
     const txn = db.getById('transactions', id);
@@ -129,8 +130,7 @@ export const explainTransaction = (req, res, next) => {
       });
     }
 
-    const explanation = txn.explanationBangla ||
-      `আপনার ${txn.dateDisplay} তারিখে ${txn.title} বাবদ ৳${txn.amount} টাকা সফলভাবে লেনদেন হয়েছে।`;
+    const explanation = await explainTransactionWithGemini(txn);
 
     res.json({
       success: true,

@@ -1,5 +1,331 @@
 [
   {
+    "id": "vlog_1790975150493",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:05:50.493Z",
+    "rawTranscript": "৳370।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.5,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": 370,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790975113899",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:05:13.899Z",
+    "rawTranscript": "প্রাপকের নাম হচ্ছে সাকিব।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": "সাকিব",
+      "recipientPhone": "01812-345678",
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790975100667",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:05:00.667Z",
+    "rawTranscript": "রাভকের নাম হচ্ছে।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "help",
+    "confidence": 0.85,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790975074561",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:04:34.561Z",
+    "rawTranscript": "আমি ৳370 পাঠাতে চাচ্ছি।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": 370,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974895563",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:01:35.563Z",
+    "rawTranscript": "আমার কি কোনো রিমাইন্ডার?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "show_reminders",
+    "confidence": 0.99,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974839854",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T21:00:39.854Z",
+    "rawTranscript": "রাকিটকে পাঁচশ টাকা সেন্ট মানি করো।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": "Rakib",
+      "recipientPhone": "01798-765432",
+      "agent": null,
+      "amount": 500,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974783658",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:59:43.658Z",
+    "rawTranscript": "আমার ইন্টারনেট বিল কত ছিল?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "transaction_history",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": "internet bill"
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974669262",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:57:49.262Z",
+    "rawTranscript": "আমার ইন্টারনেট বিল কত ছিল?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "transaction_history",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": "internet bill"
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974582918",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:56:22.918Z",
+    "rawTranscript": "আমার বিল কত ছিল?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "show_reminders",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": "bills"
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974246142",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:50:46.142Z",
+    "rawTranscript": "আমি মাকে কত টাকা দিয়েছি।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "transaction_history",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": "মা",
+      "recipientPhone": "01711-223344",
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": "mother transaction history"
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974225541",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:50:25.541Z",
+    "rawTranscript": "আমি মাকে কত টাকা দিয়েছি।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "transaction_history",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": "মা",
+      "recipientPhone": "01711-223344",
+      "agent": null,
+      "amount": null,
+      "currency": "BDT",
+      "purpose": "mother transaction history"
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974135430",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:48:55.430Z",
+    "rawTranscript": "আমার সম্মতি দিলাম তুমি ৳500 পাঠাও।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.95,
+    "entities": {
+      "recipient": null,
+      "recipientPhone": null,
+      "agent": null,
+      "amount": 500,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974082992",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:48:02.992Z",
+    "rawTranscript": "আমি রাকিবকে ৳500 পাঠাতে চাই সাথে।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.98,
+    "entities": {
+      "recipient": "Rakib",
+      "recipientPhone": "01798-765432",
+      "agent": null,
+      "amount": 500,
+      "currency": "BDT",
+      "purpose": null
+    },
+    "status": "PROCESSED",
+    "engine": "gemini_3.5_flash_lite",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790974027126",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:47:07.126Z",
+    "rawTranscript": "আমি রোহেমস্টার থেকে কত টাকা ক্যাশ আউট করেছি।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "check_balance",
+    "confidence": 0.98,
+    "entities": {
+      "amount": 13500,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "engine": "fallback_after_gemini_error",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790973902857",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:45:02.857Z",
+    "rawTranscript": "রাকিবকে ৳1000 পাঠাও।",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "send_money",
+    "confidence": 0.96,
+    "entities": {
+      "recipient": "রাকিব",
+      "recipientPhone": "01798-765432",
+      "amount": 1000,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "engine": "fallback_after_gemini_error",
+    "privacyCompliant": true
+  },
+  {
+    "id": "vlog_1790973119191",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-02T20:31:59.191Z",
+    "rawTranscript": "আমার ব্যালেন্স কত এখন?",
+    "language": "bn-BD",
+    "pageContext": "dashboard",
+    "intent": "check_balance",
+    "confidence": 0.98,
+    "entities": {
+      "amount": 13500,
+      "currency": "BDT"
+    },
+    "status": "PROCESSED",
+    "engine": "fallback_after_gemini_error",
+    "privacyCompliant": true
+  },
+  {
     "id": "vlog_1790970835949",
     "userId": "usr_imran_001",
     "timestamp": "2026-10-02T19:53:55.949Z",

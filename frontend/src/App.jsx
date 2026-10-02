@@ -11,6 +11,8 @@ import Dashboard from './pages/Dashboard';
 import SendMoney from './pages/SendMoney';
 import CashOut from './pages/CashOut';
 import Transactions from './pages/Transactions';
+import LockMoney from './pages/LockMoney';
+import Reminders from './pages/Reminders';
 import Voice from './pages/Voice';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
@@ -194,7 +196,7 @@ export default function App() {
               path="/lock-money"
               element={
                 <ProtectedRoute>
-                  <DesignSystemShowcase />
+                  <LockMoney />
                 </ProtectedRoute>
               }
             />
@@ -202,7 +204,7 @@ export default function App() {
               path="/reminders"
               element={
                 <ProtectedRoute>
-                  <DesignSystemShowcase />
+                  <Reminders />
                 </ProtectedRoute>
               }
             />

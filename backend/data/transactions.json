@@ -1,5 +1,24 @@
 [
   {
+    "id": "TXN-2026-855535",
+    "userId": "usr_imran_001",
+    "title": "রাকিব (Send Money)",
+    "recipient": "রাকিব",
+    "recipientPhone": "01798-765432",
+    "recipientCode": "",
+    "type": "send_money",
+    "amount": 500,
+    "fee": 0,
+    "currency": "BDT",
+    "date": "2026-10-02T21:00:55.535Z",
+    "dateDisplay": "আজ, এইমাত্র",
+    "category": "ব্যক্তিগত",
+    "categoryKey": "personal",
+    "status": "COMPLETED",
+    "month": "2026-10",
+    "explanationBangla": "আপনার এইমাত্র রাকিব-কে ৳500 টাকা সফলভাবে পাঠানো হয়েছে। কোনো অতিরিক্ত ফি নেওয়া হয়নি।"
+  },
+  {
     "id": "TXN-591694",
     "userId": "usr_imran_001",
     "title": "রহিম স্টোর (Cash Out)",

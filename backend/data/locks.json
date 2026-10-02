@@ -1,5 +1,19 @@
 [
   {
+    "id": "lock_test_1790976706661",
+    "userId": "usr_imran_001",
+    "purpose": "শিক্ষা ফি",
+    "purposeKey": "education",
+    "amount": 2000,
+    "currency": "BDT",
+    "status": "UNLOCKED",
+    "lockedOn": "2026-10-02T21:31:46.661Z",
+    "lockedOnDisplay": "আজ, এইমাত্র",
+    "reason": "পরীক্ষার ফি সুরক্ষিত রাখা",
+    "icon": "🎓",
+    "unlockedAt": "2026-10-02T21:31:46.666Z"
+  },
+  {
     "id": "lock_001",
     "userId": "usr_imran_001",
     "purpose": "জরুরি সঞ্চয়",

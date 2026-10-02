@@ -13,6 +13,7 @@ import CashOut from './pages/CashOut';
 import Transactions from './pages/Transactions';
 import LockMoney from './pages/LockMoney';
 import Reminders from './pages/Reminders';
+import StrictMode from './pages/StrictMode';
 import Voice from './pages/Voice';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
@@ -212,7 +213,7 @@ export default function App() {
               path="/strict-mode"
               element={
                 <ProtectedRoute>
-                  <DesignSystemShowcase />
+                  <StrictMode />
                 </ProtectedRoute>
               }
             />

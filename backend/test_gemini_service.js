@@ -95,8 +95,22 @@ try {
   }
   console.log('✓ Transaction explanation passed!\n');
 
+  // 8. Conversational Transaction Query
+  console.log('--- 8. Testing Conversational Transaction History Query ---');
+  const historyRes = await extractIntentWithGemini({
+    userText: 'আমি মাকে কত টাকা পাঠিয়েছি?',
+    pageContext: 'dashboard',
+  });
+  console.log('Intent:', historyRes.intent);
+  console.log('Target Entity:', historyRes.entities?.recipient || historyRes.entities?.purpose);
+  console.log('Reply Bangla:', historyRes.replyTextBangla);
+  if (historyRes.intent !== 'transaction_history') {
+    throw new Error(`Expected transaction_history intent, got: ${historyRes.intent}`);
+  }
+  console.log('✓ Conversational transaction query passed!\n');
+
   console.log('====================================================');
-  console.log('🎉 ALL 7 GEMINI & AI INTENT EXTRACTION TESTS PASSED!');
+  console.log('🎉 ALL 8 GEMINI & AI INTENT EXTRACTION TESTS PASSED!');
   console.log('====================================================');
 } catch (err) {
   console.error('Test execution failed:', err);

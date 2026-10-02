@@ -79,7 +79,13 @@ export default function VoiceCommand({
       } else if (intentRes.intent === 'show_reminders') {
         navigate('/reminders');
       } else if (intentRes.intent === 'transaction_history') {
-        navigate('/transactions');
+        const query =
+          intentRes.entities?.recipient ||
+          intentRes.entities?.purpose ||
+          intentRes.entities?.agent ||
+          '';
+        const filterType = intentRes.entities?.type || '';
+        navigate('/transactions', { state: { query, filterType } });
       } else if (intentRes.intent === 'lock_money') {
         navigate('/lock-money', { state: { prefill: intentRes.entities } });
       }

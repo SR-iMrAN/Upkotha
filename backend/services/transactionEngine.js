@@ -81,6 +81,7 @@ export const stageTransaction = ({
   let targetDisplayName = recipient || 'অজ্ঞাত প্রাপক';
   let targetPhone = '';
   let targetCode = '';
+  let matchedContact = null;
 
   if (type === 'send_money') {
     if (!recipient) {
@@ -91,7 +92,7 @@ export const stageTransaction = ({
       };
     }
 
-    const matchedContact = db.findContact(user.id, recipient);
+    matchedContact = db.findContact(user.id, recipient);
     if (matchedContact) {
       targetDisplayName = matchedContact.name;
       targetPhone = matchedContact.phone;
@@ -126,14 +127,23 @@ export const stageTransaction = ({
   if (isHighValue) {
     anomalySignal = {
       level: 'WARNING',
-      title: 'উচ্চ মূল্যের লেনদেনের সতর্কতা',
-      messageBangla: `সতর্কতা: ৳${numAmount} টাকা আপনার সাধারণ লেনদেনের গড় পরিমাণের চেয়ে বেশি। প্রাপকের তথ্য পুনরায় যাচাই করুন।`,
+      title: 'উচ্চ মূল্যের লেনদেনের সতর্কতা (High Value Alert)',
+      messageBangla: `সতর্কতা: ৳${new Intl.NumberFormat('bn-BD').format(numAmount)} টাকা আপনার সাধারণ লেনদেনের চেয়ে বেশি। প্রাপকের নাম ও নম্বর সতর্কতার সাথে যাচাই করুন।`,
+      requiresDoubleConfirmation: true,
+    };
+  } else if (type === 'send_money' && !matchedContact) {
+    anomalySignal = {
+      level: 'CAUTION',
+      title: 'অপরিচিত প্রাপক সতর্কতা',
+      messageBangla: `সতর্কতা: '${targetDisplayName}' আপনার সংরক্ষিত পরিচিতি তালিকায় নেই। ভুল নম্বরে টাকা পাঠানো রোধে নম্বরটি পুনরায় যাচাই করুন।`,
+      requiresDoubleConfirmation: isStrictActive,
     };
   } else if (isStrictActive) {
     anomalySignal = {
       level: 'INFO',
-      title: 'স্ট্রিক্ট মোড সুরক্ষা',
-      messageBangla: 'স্ট্রিক্ট মোড সক্রিয় রয়েছে। লেনদেন সম্পন্ন করতে পিন নিশ্চিতকরণ বাধ্যতামূলক।',
+      title: 'স্ট্রিক্ট মোড সুরক্ষা সক্রিয়',
+      messageBangla: 'স্ট্রিক্ট মোড সুরক্ষা সক্রিয় রয়েছে। প্রতিটি পদক্ষেপে আপনার অনুমোদন ও ৪ ডিজিটের পিন আবশ্যক।',
+      requiresDoubleConfirmation: false,
     };
   }
 

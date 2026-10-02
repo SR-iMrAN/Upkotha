@@ -267,16 +267,46 @@ export const deterministicFallbackParser = (rawText, pageContext = 'dashboard', 
     text.includes('খরচ') ||
     text.includes('লেনদেন') ||
     text.includes('ইতিহাস') ||
+    text.includes('দিয়েছি') ||
+    text.includes('দিয়েছি') ||
+    text.includes('পাঠিয়েছি') ||
+    text.includes('পাঠিয়েছি') ||
+    text.includes('কত টাকা') ||
     lower.includes('history') ||
     lower.includes('statement') ||
     lower.includes('transaction')
   ) {
+    let recipient = null;
+    let purpose = null;
+    let type = null;
+
+    if (text.includes('মা') || lower.includes('mother')) recipient = 'মা';
+    else if (text.includes('রাকিব') || lower.includes('rakib')) recipient = 'রাকিব';
+    else if (text.includes('সাকিব') || lower.includes('sakib')) recipient = 'সাকিব';
+    else if (text.includes('নাদিয়া') || text.includes('নাদিয়া') || lower.includes('nadia')) recipient = 'নাদিয়া';
+
+    if (text.includes('ইন্টারনেট') || lower.includes('internet')) purpose = 'ইন্টারনেট বিল';
+    else if (text.includes('বিদ্যুৎ') || lower.includes('electricity') || lower.includes('desco')) purpose = 'বিদ্যুৎ বিল';
+
+    if (text.includes('ক্যাশ আউট') || lower.includes('cash out')) type = 'cash_out';
+    else if (text.includes('সেন্ড মানি') || lower.includes('send money')) type = 'send_money';
+    else if (text.includes('বিল') || lower.includes('bill')) type = 'bill_pay';
+
+    const filterTarget = recipient || purpose || (type === 'cash_out' ? 'ক্যাশ আউট' : type === 'bill_pay' ? 'বিল পে' : null);
+
     return {
       intent: 'transaction_history',
       confidence: 0.95,
       requiresConfirmation: false,
-      entities: { currency: 'BDT' },
-      replyTextBangla: 'আপনার সাম্প্রতিক লেনদেন এবং খরচের তালিকা প্রদর্শন করা হচ্ছে।',
+      entities: {
+        recipient,
+        purpose,
+        type,
+        currency: 'BDT',
+      },
+      replyTextBangla: filterTarget
+        ? `আপনার '${filterTarget}' সংক্রান্ত লেনদেনের ইতিহাস নিচে প্রদর্শিত হচ্ছে।`
+        : 'আপনার সাম্প্রতিক লেনদেন এবং খরচের তালিকা প্রদর্শন করা হচ্ছে।',
       pageContext,
       engine: 'deterministic_fallback',
     };

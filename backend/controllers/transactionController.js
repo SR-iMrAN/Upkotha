@@ -5,13 +5,65 @@ import { explainTransactionWithGemini } from '../services/geminiService.js';
 export const getTransactions = (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { type, limit } = req.query;
+    const { type, category, month, search, q, limit } = req.query;
 
-    let txns = db.getAll('transactions').filter(t => t.userId === userId);
+    const allUserTxns = db.getAll('transactions').filter(t => t.userId === userId);
+    let txns = [...allUserTxns];
 
-    if (type) {
+    if (type && type !== 'all') {
       txns = txns.filter(t => t.type === type);
     }
+
+    if (category && category !== 'all') {
+      txns = txns.filter(t => t.categoryKey === category || t.category === category);
+    }
+
+    if (month && month !== 'all') {
+      txns = txns.filter(t => t.month === month || (t.date && t.date.startsWith(month)));
+    }
+
+    const searchQuery = (search || q || '').trim().toLowerCase();
+    if (searchQuery) {
+      txns = txns.filter(t => {
+        const title = (t.title || '').toLowerCase();
+        const recipient = (t.recipient || '').toLowerCase();
+        const recipientPhone = (t.recipientPhone || '').toLowerCase();
+        const recipientCode = (t.recipientCode || '').toLowerCase();
+        const cat = (t.category || '').toLowerCase();
+        const dateDisplay = (t.dateDisplay || '').toLowerCase();
+        const id = (t.id || '').toLowerCase();
+        return (
+          title.includes(searchQuery) ||
+          recipient.includes(searchQuery) ||
+          recipientPhone.includes(searchQuery) ||
+          recipientCode.includes(searchQuery) ||
+          cat.includes(searchQuery) ||
+          dateDisplay.includes(searchQuery) ||
+          id.includes(searchQuery)
+        );
+      });
+    }
+
+    // Spending Analytics Calculation
+    const totalSpent = txns
+      .filter(t => t.type !== 'received')
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+    const totalFees = txns.reduce((sum, t) => sum + (t.fee || 0), 0);
+    const totalInflow = txns
+      .filter(t => t.type === 'received')
+      .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+    const spendingByCategory = {
+      personal: txns
+        .filter(t => t.categoryKey === 'personal' || t.type === 'send_money')
+        .reduce((sum, t) => sum + (t.amount || 0), 0),
+      utilities: txns
+        .filter(t => t.categoryKey === 'utilities' || t.type === 'bill_pay')
+        .reduce((sum, t) => sum + (t.amount || 0), 0),
+      cash_out: txns
+        .filter(t => t.categoryKey === 'cash_out' || t.type === 'cash_out')
+        .reduce((sum, t) => sum + (t.amount || 0), 0),
+    };
 
     if (limit) {
       txns = txns.slice(0, parseInt(limit, 10));
@@ -21,6 +73,14 @@ export const getTransactions = (req, res, next) => {
       success: true,
       count: txns.length,
       transactions: txns,
+      analytics: {
+        totalSpent,
+        totalFees,
+        totalInflow,
+        spendingByCategory,
+        availableBalance: req.user.availableBalance,
+        lockedBalance: req.user.lockedBalance,
+      },
     });
   } catch (err) {
     next(err);

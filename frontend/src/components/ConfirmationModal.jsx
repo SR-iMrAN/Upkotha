@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { ShieldAlert, CheckCircle, X, Lock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, CheckCircle, X, Lock, AlertCircle, Volume2, ShieldCheck } from 'lucide-react';
+import { useVoice } from '../context/VoiceContext';
 import Button from './Button';
 
 /**
- * ConfirmationModal: High-security authorization modal
+ * ConfirmationModal: High-security authorization modal with Strict Mode & Double Confirmation.
  * Enforces PIN collection and human authorization before simulated transaction execution.
  */
 export default function ConfirmationModal({
@@ -17,10 +18,47 @@ export default function ConfirmationModal({
   availableBalance = 13500,
   isStrictMode = false,
   anomalyWarning = null,
+  anomalySignal = null,
   isLoading = false,
 }) {
+  const { speak } = useVoice();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isAcknowledged, setIsAcknowledged] = useState(false);
+
+  // Determine if double confirmation is required
+  const isHighValue = amount >= 5000;
+  const requiresDoubleConfirmation =
+    anomalySignal?.requiresDoubleConfirmation ||
+    (isStrictMode && isHighValue) ||
+    Boolean(anomalyWarning);
+
+  const activeWarning =
+    anomalySignal?.messageBangla ||
+    anomalyWarning ||
+    (isStrictMode && isHighValue
+      ? `সতর্কতা: ৳${new Intl.NumberFormat('bn-BD').format(amount)} টাকা একটি বড় অঙ্কের লেনদেন। নিশ্চিত করতে তথ্য মিলিয়ে নিন।`
+      : null);
+
+  // Announce audio warning on open if high-value or anomaly
+  useEffect(() => {
+    if (isOpen && (isHighValue || isStrictMode || anomalySignal)) {
+      const speechText =
+        isHighValue
+          ? `সতর্কতা: এটি একটি বড় অঙ্কের লেনদেন, ৳${new Intl.NumberFormat('bn-BD').format(amount)} টাকা। অনুগ্রহ করে প্রাপকের তথ্য ভালোভাবে দেখে নিন।`
+          : isStrictMode
+          ? 'স্ট্রিক্ট মোড সক্রিয়। প্রাপক ও টাকার পরিমাণ সতর্কতার সাথে যাচাই করুন।'
+          : null;
+
+      if (speechText) {
+        speak(speechText);
+      }
+    } else {
+      setIsAcknowledged(false);
+      setPin('');
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -28,6 +66,11 @@ export default function ConfirmationModal({
   const remainingBalance = availableBalance - totalDeduction;
 
   const handleConfirm = () => {
+    if (requiresDoubleConfirmation && !isAcknowledged) {
+      setError('লেনদেন সম্পন্ন করতে নিচের চেকবক্সটিতে টিক দিন');
+      return;
+    }
+
     if (!pin || pin.length < 4) {
       setError('অনুগ্রহ করে সঠিক ৪ ডিজিটের পিন (PIN) দিন');
       return;
@@ -36,70 +79,138 @@ export default function ConfirmationModal({
     onConfirm(pin);
   };
 
+  const formatBDT = (val) => new Intl.NumberFormat('bn-BD').format(val || 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in">
-      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative">
+      <div
+        className={`bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative transition-all ${
+          isStrictMode
+            ? 'border-2 border-slate-900 ring-2 ring-emerald-600/30'
+            : 'border border-slate-200'
+        }`}
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
           disabled={isLoading}
           className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+          title="বন্ধ করুন"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Title */}
         <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+              isStrictMode ? 'bg-emerald-700 text-white shadow-xs' : 'bg-emerald-100 text-emerald-700'
+            }`}
+          >
             <Lock className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-slate-900">{title}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className={`font-bold text-slate-900 ${isStrictMode ? 'text-lg' : 'text-base'}`}>
+                {title}
+              </h3>
+              {isStrictMode && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  স্ট্রিক্ট মোড
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500">লেনদেনটি সম্পন্ন করতে আপনার তথ্য যাচাই করুন</p>
           </div>
         </div>
 
-        {/* Strict Mode / Anomaly Alert if triggered */}
-        {(isStrictMode || anomalyWarning) && (
-          <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+        {/* Strict Mode / Anomaly Alert Banner */}
+        {activeWarning && (
+          <div
+            className={`mt-4 p-3.5 rounded-xl text-xs flex items-start gap-2.5 ${
+              isHighValue || anomalySignal?.level === 'WARNING'
+                ? 'bg-rose-50 border-2 border-rose-300 text-rose-950'
+                : 'bg-amber-50 border border-amber-300 text-amber-900'
+            }`}
+          >
+            <ShieldAlert
+              className={`w-4 h-4 shrink-0 mt-0.5 ${
+                isHighValue || anomalySignal?.level === 'WARNING' ? 'text-rose-600' : 'text-amber-600'
+              }`}
+            />
             <div>
-              <p className="font-semibold">
-                {isStrictMode ? 'স্ট্রিক্ট মোড (Strict Mode) সক্রিয় রয়েছে' : 'সতর্কতা সংকেত'}
+              <p className="font-bold">
+                {anomalySignal?.title || (isHighValue ? 'উচ্চ মূল্যের লেনদেন সতর্কতা' : 'স্ট্রিক্ট মোড সতর্কতা')}
               </p>
-              <p className="text-amber-800 mt-0.5">
-                {anomalyWarning || 'লেনদেনটি চূড়ান্ত করার পূর্বে প্রাপক এবং টাকার পরিমাণ পুনরায় যাচাই করুন।'}
-              </p>
+              <p className="mt-0.5 leading-relaxed font-normal">{activeWarning}</p>
             </div>
           </div>
         )}
 
         {/* Transaction Summary Card */}
-        <div className="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2.5 text-xs text-slate-600">
+        <div
+          className={`mt-4 rounded-xl p-4 space-y-2.5 ${
+            isStrictMode
+              ? 'bg-slate-100 border border-slate-300 text-slate-800 text-sm'
+              : 'bg-slate-50 border border-slate-200 text-xs text-slate-600'
+          }`}
+        >
           <div className="flex justify-between items-center">
             <span>প্রাপক / সুবিধাভোগী:</span>
-            <span className="font-semibold text-slate-800">{recipient}</span>
+            <span className={`font-bold text-slate-900 ${isStrictMode ? 'text-base' : 'text-sm'}`}>
+              {recipient}
+            </span>
           </div>
+
           <div className="flex justify-between items-center">
             <span>লেনদেনের পরিমাণ:</span>
-            <span className="font-bold text-slate-900 text-sm">৳ {new Intl.NumberFormat('bn-BD').format(amount)}</span>
+            <span className={`font-extrabold text-slate-900 ${isStrictMode ? 'text-2xl font-mono' : 'text-base'}`}>
+              ৳ {formatBDT(amount)}
+            </span>
           </div>
+
           <div className="flex justify-between items-center">
             <span>সার্ভিস চার্জ:</span>
-            <span className="font-medium text-emerald-600">{fee === 0 ? 'বিনামূল্যে (৳ 0)' : `৳ ${fee}`}</span>
+            <span className="font-medium text-emerald-700">
+              {fee === 0 ? 'বিনামূল্যে (৳ ০)' : `৳ ${formatBDT(fee)}`}
+            </span>
           </div>
-          <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-slate-800 font-semibold">
+
+          <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-slate-900 font-bold">
             <span>মোট কর্তন:</span>
-            <span className="text-sm font-bold text-emerald-800">৳ {new Intl.NumberFormat('bn-BD').format(totalDeduction)}</span>
+            <span className={`font-black text-emerald-800 ${isStrictMode ? 'text-lg font-mono' : 'text-base'}`}>
+              ৳ {formatBDT(totalDeduction)}
+            </span>
           </div>
+
           <div className="flex justify-between items-center text-[11px] text-slate-500">
             <span>লেনদেন পরবর্তী ব্যালেন্স:</span>
-            <span>৳ {new Intl.NumberFormat('bn-BD').format(remainingBalance)}</span>
+            <span className="font-medium text-slate-700">৳ {formatBDT(remainingBalance)}</span>
           </div>
         </div>
 
+        {/* Double Confirmation Checkbox (for high-value or strict mode) */}
+        {requiresDoubleConfirmation && (
+          <div className="mt-4">
+            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50/80 border border-amber-300 cursor-pointer hover:bg-amber-100/50 transition">
+              <input
+                type="checkbox"
+                checked={isAcknowledged}
+                onChange={(e) => {
+                  setIsAcknowledged(e.target.checked);
+                  setError('');
+                }}
+                className="checkbox checkbox-warning checkbox-sm mt-0.5 rounded"
+              />
+              <span className="text-xs text-amber-950 font-semibold leading-relaxed">
+                আমি প্রাপকের নাম ও ৳{formatBDT(amount)} টাকার পরিমাণ সচেতনভাবে যাচাই করেছি এবং লেনদেনে সম্মতি দিচ্ছি।
+              </span>
+            </label>
+          </div>
+        )}
+
         {/* Secure PIN Entry */}
-        <div className="mt-5">
+        <div className="mt-4">
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             নিরাপত্তা পিন (Demo PIN: 1234)
           </label>
@@ -107,16 +218,19 @@ export default function ConfirmationModal({
             type="password"
             maxLength={4}
             value={pin}
+            disabled={requiresDoubleConfirmation && !isAcknowledged}
             onChange={(e) => {
               setPin(e.target.value.replace(/\D/g, ''));
               setError('');
             }}
             placeholder="••••"
-            className="w-full text-center text-xl tracking-widest font-mono py-2.5 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+            className={`w-full text-center tracking-widest font-mono py-2.5 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white transition ${
+              isStrictMode ? 'text-2xl font-bold border-slate-400' : 'text-xl border-slate-300'
+            } ${requiresDoubleConfirmation && !isAcknowledged ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
           />
           {error && (
-            <p className="mt-1 text-xs text-rose-600 flex items-center gap-1">
-              <AlertCircle className="w-3.5 h-3.5" />
+            <p className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium animate-in fade-in">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
               {error}
             </p>
           )}
@@ -124,12 +238,7 @@ export default function ConfirmationModal({
 
         {/* Action Buttons */}
         <div className="mt-6 flex items-center gap-3">
-          <Button
-            variant="outline"
-            fullWidth
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" fullWidth onClick={onClose} disabled={isLoading}>
             বাতিল করুন
           </Button>
 
@@ -137,6 +246,7 @@ export default function ConfirmationModal({
             variant="primary"
             fullWidth
             isLoading={isLoading}
+            disabled={requiresDoubleConfirmation && !isAcknowledged}
             onClick={handleConfirm}
           >
             নিশ্চিত করুন

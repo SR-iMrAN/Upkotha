@@ -64,11 +64,11 @@ export const api = {
   // Locks
   getLocks: () => request('/lock'),
   createLock: (payload) => request('/lock', { method: 'POST', body: JSON.stringify(payload) }),
-  unlockMoney: (id) => request(`/lock/${id}/unlock`, { method: 'POST' }),
+  unlockMoney: (id, payload = {}) => request(`/lock/${id}/unlock`, { method: 'POST', body: JSON.stringify(payload) }),
 
   // Reminders
   getReminders: () => request('/reminders'),
-  completeReminder: (id) => request(`/reminders/${id}/complete`, { method: 'POST' }),
+  completeReminder: (id, payload = {}) => request(`/reminders/${id}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
 
   // AI & Voice
   extractIntent: (userText, page, action) => request('/ai/intent', { method: 'POST', body: JSON.stringify({ userText, page, action }) }),

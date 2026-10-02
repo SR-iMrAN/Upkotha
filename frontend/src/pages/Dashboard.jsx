@@ -25,7 +25,9 @@ import VoiceGuide from '../components/VoiceGuide';
 import VoiceCommand from '../components/VoiceCommand';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
+import { useVoice } from '../context/VoiceContext';
 import { showToast, showExplainModal } from '../utils/alert';
+import api from '../services/api';
 import {
   SYNTHETIC_TRANSACTIONS,
   SYNTHETIC_REMINDERS,
@@ -89,10 +91,35 @@ function SpendingSummary({ data }) {
 
 export default function Dashboard() {
   const { user, toggleStrictMode, updateBalance } = useAuth();
+  const { speak, stopSpeaking, isSpeaking } = useVoice();
   const navigate = useNavigate();
 
+  const [insights, setInsights] = useState(SYNTHETIC_INSIGHTS);
   const [reminders, setReminders] = useState(SYNTHETIC_REMINDERS);
   const [dismissedInsights, setDismissedInsights] = useState([]);
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const res = await api.getInsights();
+        if (res.insights && res.insights.length > 0) {
+          setInsights(res.insights);
+        }
+      } catch (err) {
+        // Fallback to synthetic insights
+      }
+
+      try {
+        const remRes = await api.getReminders();
+        if (remRes.reminders && remRes.reminders.length > 0) {
+          setReminders(remRes.reminders);
+        }
+      } catch (err) {
+        // Fallback
+      }
+    }
+    loadDashboardData();
+  }, []);
 
   // Recent 5 transactions
   const recentTxns = SYNTHETIC_TRANSACTIONS.slice(0, 5);
@@ -105,7 +132,7 @@ export default function Dashboard() {
   const spendingChange = (((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100).toFixed(1);
   const spendingUp = thisMonthTotal > lastMonthTotal;
 
-  const visibleInsights = SYNTHETIC_INSIGHTS.filter(i => !dismissedInsights.includes(i.id));
+  const visibleInsights = insights.filter(i => !dismissedInsights.includes(i.id));
   const urgentReminders = reminders.filter(r => r.daysUntil <= 7);
 
   const handleMarkReminderDone = (id) => {
@@ -195,9 +222,18 @@ export default function Dashboard() {
                   type={insight.type}
                   title={insight.title}
                   message={insight.message}
+                  groundedFact={insight.groundedFact}
                   actionLabel={insight.actionLabel}
                   onAction={() => handleInsightAction(insight)}
                   onDismiss={() => setDismissedInsights(prev => [...prev, insight.id])}
+                  onSpeak={() => {
+                    if (isSpeaking) {
+                      stopSpeaking();
+                    } else {
+                      speak(`${insight.title}। ${insight.message}`);
+                    }
+                  }}
+                  isSpeaking={isSpeaking}
                 />
               ))}
             </div>

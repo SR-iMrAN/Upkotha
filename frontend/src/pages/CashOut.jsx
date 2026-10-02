@@ -418,6 +418,7 @@ export default function CashOut() {
           availableBalance={user?.availableBalance || 0}
           isStrictMode={user?.isStrictMode}
           anomalyWarning={stagedData?.anomalySignal?.messageBangla}
+          anomalySignal={stagedData?.anomalySignal}
           isLoading={isExecuting}
         />
       </div>

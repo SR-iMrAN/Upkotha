@@ -5,7 +5,8 @@ import Button from '../components/Button';
 import VoiceGuide from '../components/VoiceGuide';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useAuth } from '../context/AuthContext';
-import { showToast, showAlert, showConfirm } from '../utils/alert';
+import { useVoice } from '../context/VoiceContext';
+import { showToast, showAlert } from '../utils/alert';
 import api from '../services/api';
 import {
   Lock,
@@ -16,19 +17,23 @@ import {
   Sparkles,
   Calendar,
   AlertTriangle,
+  GraduationCap,
+  Info,
 } from 'lucide-react';
 
 const COMMON_PURPOSES = [
   { key: 'emergency', label: 'জরুরি সঞ্চয়', icon: '🏥', desc: 'চিকিৎসা বা জরুরি প্রয়োজন' },
   { key: 'rent', label: 'বাড়িভাড়া', icon: '🏠', desc: 'মাসিক বাসাভাড়া সুরক্ষিত রাখা' },
-  { key: 'bills', label: 'বিল ও ফি', icon: '⚡', desc: 'বিদ্যুৎ, ইন্টারনেট বা পরীক্ষার ফি' },
-  { key: 'savings', label: 'সাধারণ সঞ্চয়', icon: '💰', desc: 'ভবিষ্যতের জন্য জমানো' },
+  { key: 'bills', label: 'বিল ও ফি', icon: '⚡', desc: 'বিদ্যুৎ, ইন্টারনেট বা অন্যান্য বিল' },
+  { key: 'education', label: 'শিক্ষা ফি', icon: '🎓', desc: 'সন্তানের টিউশন বা পরীক্ষার ফি' },
+  { key: 'savings', label: 'সাধারণ সঞ্চয়', icon: '💰', desc: 'ভবিষ্যতের বিশেষ লক্ষ্য' },
 ];
 
 const QUICK_AMOUNTS = [1000, 2000, 3000, 5000, 10000];
 
 export default function LockMoney() {
   const { user, toggleStrictMode, updateBalance } = useAuth();
+  const { speak } = useVoice();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -38,7 +43,11 @@ export default function LockMoney() {
   const [reason, setReason] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Modals for PIN Confirmation
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [lockToUnlock, setLockToUnlock] = useState(null);
+  const [isUnlockModalOpen, setIsUnlockModalOpen] = useState(false);
 
   // Fetch active locks
   const loadLocks = async () => {
@@ -65,11 +74,13 @@ export default function LockMoney() {
         setAmount(String(prefill.amount));
       }
       if (prefill.purpose) {
-        const matched = COMMON_PURPOSES.find(p =>
-          p.label.includes(prefill.purpose) ||
-          prefill.purpose.toLowerCase().includes(p.key) ||
-          prefill.purpose.includes('জরুরি') && p.key === 'emergency' ||
-          prefill.purpose.includes('ভাড়া') && p.key === 'rent'
+        const matched = COMMON_PURPOSES.find(
+          (p) =>
+            p.label.includes(prefill.purpose) ||
+            prefill.purpose.toLowerCase().includes(p.key) ||
+            (prefill.purpose.includes('জরুরি') && p.key === 'emergency') ||
+            (prefill.purpose.includes('ভাড়া') && p.key === 'rent') ||
+            (prefill.purpose.includes('শিক্ষা') && p.key === 'education')
         );
         if (matched) setSelectedPurpose(matched);
       }
@@ -95,16 +106,11 @@ export default function LockMoney() {
       return;
     }
 
-    setIsModalOpen(true);
+    setIsLockModalOpen(true);
   };
 
   const handleConfirmLock = async (pin) => {
     const numAmount = Number(amount);
-
-    if (pin !== '1234') {
-      showToast.error('ভুল পিন কোড দেওয়া হয়েছে');
-      return;
-    }
 
     try {
       setIsSubmitting(true);
@@ -112,10 +118,14 @@ export default function LockMoney() {
         purpose: selectedPurpose.label,
         amount: numAmount,
         reason: reason || `${selectedPurpose.label} বাবদ টাকা সুরক্ষিত রাখা`,
+        pin,
       });
 
-      setIsModalOpen(false);
+      setIsLockModalOpen(false);
       showToast.success(res.message);
+
+      // Natural Voice Confirmation
+      speak(`আপনার ৳${new Intl.NumberFormat('bn-BD').format(numAmount)} টাকা ${selectedPurpose.label} বাবদ সফলভাবে লক করা হয়েছে।`);
 
       // Update balances in AuthContext
       if (res.newBalance) {
@@ -127,7 +137,7 @@ export default function LockMoney() {
       loadLocks();
     } catch (err) {
       showAlert({
-        title: 'মানি লক ব্যর্থ হয়েছে',
+        title: 'মানি লক সম্পন্ন করা যায়নি',
         text: err.message,
         icon: 'error',
       });
@@ -136,22 +146,29 @@ export default function LockMoney() {
     }
   };
 
-  const handleUnlock = async (lock) => {
-    const confirmed = await showConfirm(
-      `${lock.purpose} বাবদ ৳${new Intl.NumberFormat('bn-BD').format(lock.amount)} টাকা কি আনলক করতে চান? এটি আপনার ব্যবহারের ব্যালেন্সে ফিরে যাবে।`,
-      'হ্যাঁ, আনলক করুন'
-    );
+  const handleOpenUnlockModal = (lock) => {
+    setLockToUnlock(lock);
+    setIsUnlockModalOpen(true);
+  };
 
-    if (!confirmed) return;
+  const handleConfirmUnlock = async (pin) => {
+    if (!lockToUnlock) return;
 
     try {
-      const res = await api.unlockMoney(lock.id);
+      setIsSubmitting(true);
+      const res = await api.unlockMoney(lockToUnlock.id, { pin });
+
+      setIsUnlockModalOpen(false);
       showToast.success(res.message);
+
+      // Natural Voice Confirmation
+      speak(`আপনার ${lockToUnlock.purpose} বাবদ লক করা ৳${new Intl.NumberFormat('bn-BD').format(lockToUnlock.amount)} টাকা সফলভাবে আনলক করা হয়েছে।`);
 
       if (res.newBalance) {
         updateBalance(res.newBalance.available, res.newBalance.locked);
       }
 
+      setLockToUnlock(null);
       loadLocks();
     } catch (err) {
       showAlert({
@@ -159,6 +176,8 @@ export default function LockMoney() {
         text: err.message,
         icon: 'error',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,7 +185,7 @@ export default function LockMoney() {
 
   return (
     <Layout
-      title="স্মার্ট মানি লক (Smart Money Lock)"
+      title="স্মার্ট মানি লক ও সঞ্চয় সুরক্ষা (Smart Money Lock)"
       isStrictMode={user?.isStrictMode}
       onToggleStrictMode={toggleStrictMode}
       userName={user?.name}
@@ -175,14 +194,17 @@ export default function LockMoney() {
         {/* Contextual Voice Guide */}
         <VoiceGuide
           pageContext="lock_money"
-          message="ভবিষ্যতের জন্য আলাদা রাখতে চান এমন টাকার পরিমাণ বলুন। যেমন: ৫০০০ টাকা emergency-এর জন্য lock করো।"
+          message="ভবিষ্যতের জন্য আলাদা রাখতে চান এমন টাকার পরিমাণ বলুন। যেমন: ৫০০০ টাকা জরুরি সঞ্চয়ের জন্য লক করো।"
         />
 
         {/* Balance Overview Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs">
-            <span className="text-xs text-slate-500 block mb-1">মোট মোট ব্যালেন্স (Total)</span>
-            <span className="text-xl font-bold text-slate-900">৳ {formatBDT((user?.availableBalance || 0) + (user?.lockedBalance || 0))}</span>
+            <span className="text-xs text-slate-500 block mb-1">মোট ব্যালেন্স (Total)</span>
+            <span className="text-xl font-bold text-slate-900">
+              ৳ {formatBDT((user?.availableBalance || 0) + (user?.lockedBalance || 0))}
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">উপলব্ধ + সুরক্ষিত মোট পুঞ্জীভূত অর্থ</span>
           </div>
 
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 shadow-xs">
@@ -192,12 +214,25 @@ export default function LockMoney() {
           </div>
 
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 shadow-xs">
-            <span className="text-xs text-amber-700 block mb-1 flex items-center gap-1">
-              <Lock className="w-3.5 h-3.5" />
-              লক করা সঞ্চয় (Protected)
+            <span className="text-xs text-amber-700 block mb-1 flex items-center gap-1 font-semibold">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              লক করা সঞ্চয় (Protected Vault)
             </span>
             <span className="text-xl font-bold text-amber-900">৳ {formatBDT(user?.lockedBalance)}</span>
-            <span className="text-[10px] text-amber-700 block mt-0.5">জরুরি খরচ ব্যতীত নিরাপদ</span>
+            <span className="text-[10px] text-amber-700 block mt-0.5">জরুরি খরচ ব্যতীত সম্পূর্ণ সুরক্ষিত</span>
+          </div>
+        </div>
+
+        {/* How Smart Money Lock Works Educational Banner */}
+        <div className="p-4 rounded-2xl bg-slate-900 text-white shadow-sm flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <h4 className="font-bold text-emerald-300">স্মার্ট মানি লক কিভাবে কাজ করে?</h4>
+            <p className="text-slate-300 leading-relaxed font-normal">
+              লক করা টাকা আপনার ওয়ালেটেই থাকে, কিন্তু দৈনন্দিন সেন্ড মানি বা ক্যাশ আউটের সময় এটি সম্পূর্ণ নিষ্ক্রিয় থাকে।
+              যদি আপনার মোট ব্যালেন্স থাকে কিন্তু ব্যবহারযোগ্য ব্যালেন্স অপর্যাপ্ত হয়, সিস্টেম স্বয়ংক্রিয়ভাবে লেনদেন আটকে দিয়ে
+              আপনাকে সতর্ক করবে। আনলক করতে সর্বদা ৪ ডিজিটের পিন আবশ্যক।
+            </p>
           </div>
         </div>
 
@@ -213,7 +248,7 @@ export default function LockMoney() {
             <label className="block text-xs font-semibold text-slate-700 mb-2">
               লক করার উদ্দেশ্য বেছে নিন:
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
               {COMMON_PURPOSES.map((purpose) => (
                 <button
                   key={purpose.key}
@@ -240,7 +275,9 @@ export default function LockMoney() {
                 <label className="text-xs font-semibold text-slate-700">
                   লক করার পরিমাণ (৳)
                 </label>
-                <span className="text-[11px] text-slate-400">সর্বোচ্চ ৳{formatBDT(user?.availableBalance)}</span>
+                <span className="text-[11px] text-slate-400">
+                  সর্বোচ্চ উপলব্ধ ৳{formatBDT(user?.availableBalance)}
+                </span>
               </div>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-base">
@@ -270,7 +307,7 @@ export default function LockMoney() {
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    ৳{q}
+                    ৳{formatBDT(q)}
                   </button>
                 ))}
               </div>
@@ -279,13 +316,13 @@ export default function LockMoney() {
             {/* Optional Reason / Notes */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                বিবরণ (ঐচ্ছিক)
+                উদ্দেশ্যের বিবরণ (ঐচ্ছিক)
               </label>
               <input
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="যেমন: আগামী মাসের চিকিৎসার খরচ"
+                placeholder="যেমন: আগামী মাসের বাসাভাড়া বা পরীক্ষার ফি"
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
               />
             </div>
@@ -297,7 +334,7 @@ export default function LockMoney() {
               size="lg"
               icon={Lock}
             >
-              টাকা লক করুন
+              টাকা সুরক্ষিত লক করুন
             </Button>
           </form>
         </div>
@@ -310,7 +347,7 @@ export default function LockMoney() {
               সক্রিয় সুরক্ষিত বাকেটসমূহ ({locks.length})
             </h3>
             <span className="text-xs text-amber-700 font-bold">
-              মোট লক: ৳ {formatBDT(user?.lockedBalance)}
+              মোট লক করা: ৳ {formatBDT(user?.lockedBalance)}
             </span>
           </div>
 
@@ -333,7 +370,7 @@ export default function LockMoney() {
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-slate-900">{item.purpose}</h4>
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold border border-amber-300">
-                          লক করা
+                          সুরক্ষিত লক
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 mt-0.5">{item.reason}</p>
@@ -350,7 +387,7 @@ export default function LockMoney() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleUnlock(item)}
+                      onClick={() => handleOpenUnlockModal(item)}
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold transition"
                       title="টাকা ব্যবহারযোগ্য ব্যালেন্সে ফেরত নিন"
                     >
@@ -364,10 +401,10 @@ export default function LockMoney() {
           )}
         </div>
 
-        {/* PIN Confirmation Modal */}
+        {/* PIN Confirmation Modal for LOCKING */}
         <ConfirmationModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          isOpen={isLockModalOpen}
+          onClose={() => setIsLockModalOpen(false)}
           onConfirm={handleConfirmLock}
           title="মানি লক নিশ্চিতকরণ"
           recipient={`${selectedPurpose.label} বাকেট`}
@@ -377,6 +414,25 @@ export default function LockMoney() {
           isStrictMode={user?.isStrictMode}
           isLoading={isSubmitting}
         />
+
+        {/* PIN Confirmation Modal for UNLOCKING */}
+        {lockToUnlock && (
+          <ConfirmationModal
+            isOpen={isUnlockModalOpen}
+            onClose={() => {
+              setIsUnlockModalOpen(false);
+              setLockToUnlock(null);
+            }}
+            onConfirm={handleConfirmUnlock}
+            title="মানি আনলক নিশ্চিতকরণ"
+            recipient={`ব্যবহারযোগ্য ব্যালেন্স (${lockToUnlock.purpose})`}
+            amount={lockToUnlock.amount}
+            fee={0}
+            availableBalance={user?.availableBalance || 0}
+            isStrictMode={user?.isStrictMode}
+            isLoading={isSubmitting}
+          />
+        )}
       </div>
     </Layout>
   );

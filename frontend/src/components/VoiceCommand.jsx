@@ -262,7 +262,7 @@ export default function VoiceCommand({
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>বায়োমেট্রিক স্পিকার শিল্ড:</span>
               </div>
-              <span className="font-bold text-emerald-700">ইমরান হোসেন (৯৫% মিল)</span>
+              <span className="font-bold text-emerald-700">{user?.name || 'অ্যাকাউন্ট মালিক'} (৯৫% মিল)</span>
             </div>
 
             {/* Biometric Rejection Alert */}
@@ -273,7 +273,7 @@ export default function VoiceCommand({
                   <span>অননুমোদিত কণ্ঠস্বর শনাক্ত! ({biometricError.similarityScore}% মিল)</span>
                 </div>
                 <p className="leading-relaxed text-slate-700 text-[11px]">
-                  বক্তার কণ্ঠ অ্যাকাউন্ট মালিক ইমরান হোসেনের সাথে মেলেনি। আর্থিক সুরক্ষার স্বার্থে স্বয়ংক্রিয় কমান্ড বাতিল করা হয়েছে।
+                  বক্তার কণ্ঠ অ্যাকাউন্ট মালিক {user?.name || 'গ্রাহক'}-এর সাথে মেলেনি। আর্থিক সুরক্ষার স্বার্থে স্বয়ংক্রিয় কমান্ড বাতিল করা হয়েছে।
                 </p>
               </div>
             )}
@@ -399,7 +399,7 @@ export default function VoiceCommand({
             <span>অননুমোদিত কণ্ঠস্বর শনাক্ত! ({biometricError.similarityScore}% মিল)</span>
           </div>
           <p className="leading-relaxed text-slate-700 text-[11px]">
-            বক্তার কণ্ঠ অ্যাকাউন্ট মালিক ইমরান হোসেনের সাথে মেলেনি। নিরাপত্তার স্বার্থে লেনদেন প্রক্রিয়া প্রতিরোধ করা হয়েছে।
+            বক্তার কণ্ঠ অ্যাকাউন্ট মালিক {user?.name || 'গ্রাহক'}-এর সাথে মেলেনি। নিরাপত্তার স্বার্থে লেনদেন প্রক্রিয়া প্রতিরোধ করা হয়েছে।
           </p>
         </div>
       )}

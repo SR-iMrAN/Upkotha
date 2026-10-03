@@ -58,6 +58,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      localStorage.setItem('upkotha_user', JSON.stringify(user));
     }
   }, [user]);
 

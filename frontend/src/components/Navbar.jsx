@@ -16,7 +16,7 @@ export default function Navbar({
 }) {
   const { toggleLang, isEnglish, t } = useLanguage();
   const { user } = useAuth();
-  const displayName = userName || user?.name || 'ইমরান';
+  const displayName = userName || user?.name || 'গ্রাহক';
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-30 px-4 md:px-6 flex items-center justify-between shadow-xs">

@@ -11,7 +11,7 @@ import AddMoneyModal from './AddMoneyModal';
 export default function BalanceCard({
   available = 13500,
   locked = 5000,
-  userName = 'ইমরান',
+  userName = 'গ্রাহক',
   accountNumber = '01712-345678',
   onAddMoney,
 }) {

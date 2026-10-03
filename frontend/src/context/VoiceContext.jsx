@@ -156,6 +156,10 @@ export function VoiceProvider({ children }) {
         } else if (event.error === 'no-speech') {
           setError('কোনো বক্তব্য শোনা যায়নি। আবার চেষ্টা করুন।');
           setIsListening(false);
+        } else if (event.error === 'network') {
+          console.info('[VOICE] Speech recognition server unreachable or blocked by browser shields (Brave/Chrome)');
+          setError('ব্রাউজারের গুগল স্পিচ সার্ভিস সীমাবদ্ধ (Brave Shields বা Chrome নেটওয়ার্ক)। নিচে রেডি বাটনে চাপ দিন বা লিখুন।');
+          setIsListening(false);
         } else {
           setError(`ভয়েস ত্রুটি: ${event.error}`);
           setIsListening(false);
@@ -184,7 +188,7 @@ export function VoiceProvider({ children }) {
     setIsSpeaking(false);
   }, []);
 
-  // Natural Bangla Speech Engine with Online TTS Fallback
+  // Natural Bangla Speech Engine with Cross-Browser Compatibility (Chrome, Brave, Edge)
   const speak = useCallback((text, options = {}) => {
     if (isMuted || !text) return;
 
@@ -193,62 +197,60 @@ export function VoiceProvider({ children }) {
 
     stopSpeaking();
 
-    const voices = synthRef.current ? synthRef.current.getVoices() : [];
-    const banglaVoice = voices.find(v =>
-      v.lang === 'bn-BD' ||
-      v.lang === 'bn_BD' ||
-      v.lang === 'bn-IN' ||
-      v.lang.startsWith('bn') ||
-      v.name.toLowerCase().includes('bangla') ||
-      v.name.toLowerCase().includes('bengali')
-    );
-
-    if (banglaVoice && synthRef.current) {
-      try {
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.voice = banglaVoice;
-        utterance.lang = 'bn-BD';
-        utterance.rate = options.rate || 0.95;
-        utterance.pitch = options.pitch || 1.0;
-
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          if (options.onEnd) options.onEnd();
-        };
-        utterance.onerror = () => setIsSpeaking(false);
-
-        synthRef.current.speak(utterance);
-        return;
-      } catch (err) {
-        console.warn('SpeechSynthesis failed, falling back to audio stream', err);
-      }
+    if (!synthRef.current) {
+      setIsSpeaking(false);
+      return;
     }
 
     try {
-      setIsSpeaking(true);
-      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=bn&client=tw-ob&q=${encodeURIComponent(cleanText)}`;
-      const audio = new Audio(audioUrl);
-      audioPlayerRef.current = audio;
+      const voices = synthRef.current.getVoices() || [];
+      const banglaVoice = voices.find(v =>
+        v.lang === 'bn-BD' ||
+        v.lang === 'bn_BD' ||
+        v.lang === 'bn-IN' ||
+        v.lang.startsWith('bn') ||
+        v.name.toLowerCase().includes('bangla') ||
+        v.name.toLowerCase().includes('bengali')
+      );
 
-      audio.onended = () => {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      if (banglaVoice) {
+        utterance.voice = banglaVoice;
+      }
+      utterance.lang = 'bn-BD';
+      utterance.rate = options.rate || 0.95;
+      utterance.pitch = options.pitch || 1.0;
+
+      // CRITICAL FOR CHROME & BRAVE:
+      // Store utterance on window object to prevent V8 engine garbage collector
+      // from aborting speech playback after 1-2 seconds mid-sentence.
+      window.__activeSpeechUtterance = utterance;
+
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
+
+      utterance.onend = () => {
+        window.__activeSpeechUtterance = null;
         setIsSpeaking(false);
-        audioPlayerRef.current = null;
         if (options.onEnd) options.onEnd();
       };
 
-      audio.onerror = (e) => {
-        console.warn('[AUDIO FALLBACK ERROR]', e);
+      utterance.onerror = (e) => {
+        console.warn('[SPEECH SYNTHESIS NOTE]', e.error || e);
+        window.__activeSpeechUtterance = null;
         setIsSpeaking(false);
-        audioPlayerRef.current = null;
       };
 
-      audio.play().catch(playErr => {
-        console.warn('[AUDIO AUTOPLAY BLOCKED]', playErr);
-        setIsSpeaking(false);
-      });
+      // In Chrome/Brave, resume if in paused state
+      if (synthRef.current.paused) {
+        synthRef.current.resume();
+      }
+
+      synthRef.current.cancel();
+      synthRef.current.speak(utterance);
     } catch (err) {
-      console.error('[TTS FALLBACK ERROR]', err);
+      console.warn('[SPEECH SYNTHESIS FALLBACK]', err);
       setIsSpeaking(false);
     }
   }, [isMuted, stopSpeaking]);
@@ -266,65 +268,71 @@ export function VoiceProvider({ children }) {
   }, [stopSpeaking]);
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current) {
-      showToast.warning('আপনার ব্রাউজারে স্পিচ রিকগনিশন সমর্থিত নয়');
-      return;
-    }
-
     stopSpeaking();
     setTranscript('');
     setError(null);
     lastMeasuredPitchRef.current = null;
     pitchSamplesRef.current = [];
 
-    // 1. Start SpeechRecognition
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
+    const triggerRecognition = () => {
+      if (!recognitionRef.current) return;
       try {
-        recognitionRef.current.stop();
-        setTimeout(() => {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            console.warn('Recognition start retry failed', e);
-          }
-        }, 200);
-      } catch (e) {
-        console.warn('Recognition stop/start cycle failed', e);
+        recognitionRef.current.start();
+      } catch (err) {
+        try {
+          recognitionRef.current.stop();
+          setTimeout(() => {
+            try {
+              recognitionRef.current?.start();
+            } catch (e) {
+              console.warn('Recognition start retry failed', e);
+            }
+          }, 150);
+        } catch (e) {
+          console.warn('Recognition cycle failed', e);
+        }
       }
-    }
+    };
 
-    // 2. Start Web Audio API Real Hardware Pitch Tracker
+    // First acquire audio stream for pitch tracker without blocking SpeechRecognition
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        mediaStreamRef.current = stream;
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioContextRef.current = audioCtx;
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          mediaStreamRef.current = stream;
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          audioContextRef.current = audioCtx;
 
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
-        source.connect(analyser);
-        analyserRef.current = analyser;
+          const source = audioCtx.createMediaStreamSource(stream);
+          const analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+          source.connect(analyser);
+          analyserRef.current = analyser;
 
-        const buffer = new Float32Array(analyser.fftSize);
-        const trackPitch = () => {
-          if (!analyserRef.current) return;
-          analyserRef.current.getFloatTimeDomainData(buffer);
-          const p = detectFundamentalFrequency(buffer, audioCtx.sampleRate);
-          if (p && p >= 80 && p <= 350) {
-            pitchSamplesRef.current.push(p);
-            if (pitchSamplesRef.current.length > 30) pitchSamplesRef.current.shift();
-            const avg = pitchSamplesRef.current.reduce((a, b) => a + b, 0) / pitchSamplesRef.current.length;
-            lastMeasuredPitchRef.current = Math.round(avg);
-          }
-          animFrameRef.current = requestAnimationFrame(trackPitch);
-        };
-        trackPitch();
-      }).catch((err) => {
-        console.warn('Live pitch tracking unavailable:', err);
-      });
+          const buffer = new Float32Array(analyser.fftSize);
+          const trackPitch = () => {
+            if (!analyserRef.current) return;
+            analyserRef.current.getFloatTimeDomainData(buffer);
+            const p = detectFundamentalFrequency(buffer, audioCtx.sampleRate);
+            if (p && p >= 80 && p <= 350) {
+              pitchSamplesRef.current.push(p);
+              if (pitchSamplesRef.current.length > 30) pitchSamplesRef.current.shift();
+              const avg = pitchSamplesRef.current.reduce((a, b) => a + b, 0) / pitchSamplesRef.current.length;
+              lastMeasuredPitchRef.current = Math.round(avg);
+            }
+            animFrameRef.current = requestAnimationFrame(trackPitch);
+          };
+          trackPitch();
+
+          // Safely trigger SpeechRecognition after audio device endpoint is stable
+          setTimeout(triggerRecognition, 180);
+        })
+        .catch((err) => {
+          console.warn('Live pitch tracking microphone unavailable:', err);
+          triggerRecognition();
+        });
+    } else {
+      triggerRecognition();
     }
   }, [stopSpeaking]);
 
@@ -397,13 +405,19 @@ export function VoiceProvider({ children }) {
         speak(res.replyTextBangla);
       }
 
+      let currentUserName = 'অ্যাকাউন্ট মালিক';
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('upkotha_user') || '{}');
+        if (storedUser?.name) currentUserName = storedUser.name;
+      } catch (e) {}
+
       if (onIntentResolved) {
         onIntentResolved({
           ...res,
           voiceBiometric: biometricResult || {
             isVerified: true,
             confidence: 95,
-            speaker: 'ইমরান হোসেন',
+            speaker: currentUserName,
             antiSpoofStatus: 'PASS',
           },
         });

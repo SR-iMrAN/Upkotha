@@ -631,20 +631,20 @@ export default function VoiceSecurity() {
                   </div>
 
                   <div className="text-[11px] text-slate-500">
-                    ইমরানের নিবন্ধিত ব্যাপ্তী: <strong className="text-slate-700">110 Hz - 155 Hz</strong>
+                    {user?.name || profile?.primarySpeaker || 'মালিক'}-এর নিবন্ধিত ব্যাপ্তী: <strong className="text-slate-700">{profile?.pitchRangeHz ? `${profile.pitchRangeHz[0]} Hz - ${profile.pitchRangeHz[1]} Hz` : '110 Hz - 155 Hz'}</strong>
                   </div>
 
                   {livePitch && (
                     <span
                       className={`text-[11px] font-semibold ${
-                        livePitch >= 110 && livePitch <= 155
+                        livePitch >= (profile?.pitchRangeHz?.[0] || 110) && livePitch <= (profile?.pitchRangeHz?.[1] || 155)
                           ? 'text-emerald-700'
                           : 'text-rose-600'
                       }`}
                     >
-                      {livePitch >= 110 && livePitch <= 155
-                        ? '✓ ইমরানের স্বাভাবিক পুরুষ কণ্ঠের সীমার মধ্যে'
-                        : '⚠️ ভিন্ন কণ্ঠস্বর / উচ্চ পিচ শনাক্ত হয়েছে'}
+                      {livePitch >= (profile?.pitchRangeHz?.[0] || 110) && livePitch <= (profile?.pitchRangeHz?.[1] || 155)
+                        ? `✓ ${user?.name || profile?.primarySpeaker || 'মালিক'}-এর স্বাভাবিক কণ্ঠের সীমার মধ্যে`
+                        : '⚠️ ভিন্ন কণ্ঠস্বর / অননুমোদিত পিচ শনাক্ত হয়েছে'}
                     </span>
                   )}
                 </div>
@@ -718,7 +718,7 @@ export default function VoiceSecurity() {
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <UserCheck className="w-4 h-4 text-emerald-600" />
-                      <span className="text-sm font-bold">ইমরান হোসেন (মালিক)</span>
+                      <span className="text-sm font-bold">{user?.name || profile?.primarySpeaker || 'ইমরান হোসেন'} (মালিক)</span>
                     </div>
                     <span className="text-xs text-slate-500 block leading-tight">
                       বৈধ একাউন্ট হোল্ডার। মিল প্রত্যাশিত: ৯৩-৯৭%।

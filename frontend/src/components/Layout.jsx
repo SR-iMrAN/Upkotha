@@ -18,7 +18,7 @@ export default function Layout({
   const { user, toggleStrictMode } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const activeUserName = userName || user?.name || 'ইমরান';
+  const activeUserName = userName || user?.name || 'গ্রাহক';
   const activeStrictMode = isStrictMode !== undefined ? isStrictMode : (user?.isStrictMode || false);
   const handleToggleStrictMode = onToggleStrictMode || toggleStrictMode;
 

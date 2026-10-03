@@ -7,7 +7,7 @@
 ## 1. Project Overview
 
 ### The Problem Addressed
-In Bangladesh, Mobile Financial Services (MFS) such as bKash, Nagad, and Rocket process billions of transactions monthly. However, a vast portion of the population—including semi-literate individuals, rural citizens, elderly users, and visually impaired people—face steep digital barriers:
+In Bangladesh, Mobile Financial Services (MFS) such as Upay,bKash, Nagad, and Rocket process billions of transactions monthly. However, a vast portion of the population—including semi-literate individuals, rural citizens, elderly users, and visually impaired people—face steep digital barriers:
 - **Complex UI & Cognitive Overload:** Navigating multi-level menus and alphanumeric forms is intimidating and prone to costly errors (e.g., sending money to the wrong recipient).
 - **Language Exclusion:** Most financial interfaces rely on English or formal written text, whereas users think and speak in natural conversational Bengali.
 - **Vulnerability to Impersonation & Social Engineering:** Financial fraud and unauthorized phone access target vulnerable users who struggle with PIN secrecy.
@@ -107,10 +107,14 @@ The primary purpose of UPKOTHA is financial inclusion and autonomous digital sec
 - **Microphone:** Built-in device microphone or external headset for voice recognition and live pitch tracking.
 - **Audio Output:** Device speakers or headphones for natural Bengali speech responses.
 - **Browser Compatibility:**
-  - Google Chrome (Desktop & Android, v110+)
-  - Microsoft Edge (Desktop & Android, v110+)
+  - **Google Chrome** (Desktop & Android, v110+) — **(Recommended)**
+  - **Microsoft Edge** (Desktop & Android, v110+) — **(Recommended)**
   - Apple Safari (iOS 16+ & macOS)
-  - Brave Browser (Shields configured or using built-in Web Audio TTS fallback)
+  - Brave Browser *(Note: Brave Shields blocks Web Speech API by default; see warning below)*
+
+> [!WARNING]
+> **Browser Notice (Chrome & Edge Strongly Recommended):**
+> For the best voice recognition and speech audio experience, please use **Google Chrome** or **Microsoft Edge**. Privacy browsers such as **Brave** actively block the Chromium Web Speech API network service by default via Brave Shields (resulting in `network` or silent recognition errors). If testing on Brave, you must lower Shields or use the instant typed command bar provided inside the voice assistant window.
 
 ---
 
@@ -120,7 +124,7 @@ Follow these step-by-step instructions to set up the project locally from scratc
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/Sifatur1/upkotha.git
+git clone https://github.com/SR-iMrAN/Upkotha
 cd upkotha
 ```
 
@@ -236,6 +240,10 @@ The application is deployed live and fully functional for judges to evaluate:
 | **Backend REST API** | Vercel | [https://upkotha.vercel.app](https://upkotha.vercel.app) |
 | **API Health Check** | Vercel | [https://upkotha.vercel.app/api/health](https://upkotha.vercel.app/api/health) |
 
+> [!TIP]
+> **Recommended Browser for Judges:**
+> For an optimal demonstration of the voice assistant and speech synthesis, we strongly recommend evaluating the live web app in **Google Chrome** or **Microsoft Edge**. Browsers with strict built-in privacy blockers like **Brave** actively block the Web Speech API recognition network endpoints by default, causing microphone input to stop immediately. Chrome and Edge provide full out-of-the-box Bengali voice capabilities.
+
 ### Demo Credentials for Judges
 The system comes pre-loaded with an enrolled biometric account as well as seamless new user registration:
 - **Default Account Owner (ইমরান হোসেন):**
@@ -326,9 +334,12 @@ node test_judge_walkthrough.js
 - **`backend/dataStore.js` Serverless Storage:**
   Automatically detects serverless environments (`process.env.VERCEL`) and initializes writable cache storage under `/tmp/upkotha_data`, eliminating read-only filesystem errors (`EROFS`).
 
-### Browser Microphone Permissions
-- When launching for the first time, browsers will prompt: *"Allow upkotha.netlify.app to use your microphone?"*. Select **Allow**.
-- In privacy browsers like Brave, ensure shields allow microphone access or utilize the quick manual text input fallback available directly in the voice modal.
+### Browser Microphone Permissions & Compatibility Tips
+- **Microphone Access:** When launching for the first time, browsers will prompt: *"Allow upkotha.netlify.app to use your microphone?"*. Select **Allow**.
+- **Chrome & Edge (Optimal):** Provide full native support for Web Speech API and Web Audio processing without extra configuration.
+- **Brave Browser (Shields Limitation):** Brave Shields blocks third-party speech recognition APIs by default (causing speech recognition network errors). If using Brave, either:
+  1. Click the Brave Shields lion icon in the address bar and toggle **Shields DOWN** for `upkotha.netlify.app`, or
+  2. Use the fast manual typed command input bar conveniently built directly into the voice assistant window.
 
 ---
 

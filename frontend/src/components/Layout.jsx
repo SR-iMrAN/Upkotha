@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import VoiceCommand from './VoiceCommand';
+import NetworkStatusBanner from './NetworkStatusBanner';
 
 /**
  * Layout: Master layout wrapper for all authenticated application routes
@@ -25,6 +26,9 @@ export default function Layout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64 transition-all">
+        {/* Offline Connectivity Resilience Banner */}
+        <NetworkStatusBanner />
+
         {/* Top Navbar */}
         <Navbar
           title={title}

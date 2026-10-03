@@ -77,6 +77,13 @@ export const api = {
   getVoiceProfile: () => request('/voice/profile'),
   enrollVoice: (payload = {}) => request('/voice/enroll', { method: 'POST', body: JSON.stringify(payload) }),
   getVoiceLogs: () => request('/voice/logs'),
+
+  // Admin Telemetry & Audit
+  getAdminMetrics: () => request('/admin/metrics'),
+  getAdminAuditStream: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/admin/audit${query ? `?${query}` : ''}`);
+  },
 };
 
 export default api;

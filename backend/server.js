@@ -8,6 +8,7 @@ import lockRoutes from './routes/lockRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.use('/api/lock', lockRoutes);
 app.use('/api/reminders', reminderRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Error Handling
 app.use(notFoundHandler);

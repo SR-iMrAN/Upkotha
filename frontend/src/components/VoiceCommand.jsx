@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import useVoiceAssistant from '../hooks/useVoiceAssistant';
 import { showToast } from '../utils/alert';
+import MicPermissionModal from './MicPermissionModal';
 
 const CONTEXTUAL_PROMPTS = {
   dashboard: [
@@ -53,6 +54,7 @@ export default function VoiceCommand({
   const [isOpen, setIsOpen] = useState(false);
   const [manualText, setManualText] = useState('');
   const [biometricError, setBiometricError] = useState(null);
+  const [showMicGuide, setShowMicGuide] = useState(false);
   const navigate = useNavigate();
 
   const prompts = CONTEXTUAL_PROMPTS[pageContext] || CONTEXTUAL_PROMPTS.dashboard;
@@ -223,6 +225,23 @@ export default function VoiceCommand({
               </div>
             )}
 
+            {/* Error & Mic Permission Guide Trigger */}
+            {error && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 space-y-1">
+                <div className="flex items-center justify-between font-bold text-amber-900">
+                  <span>⚠️ মাইক্রোফোন সমস্যা</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMicGuide(true)}
+                    className="underline text-[11px] text-amber-800 hover:text-amber-950"
+                  >
+                    নির্দেশিকা দেখুন
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-700">{error}</p>
+              </div>
+            )}
+
             {/* Contextual Sample Suggestions */}
             <div>
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
@@ -243,6 +262,11 @@ export default function VoiceCommand({
             </div>
           </div>
         )}
+
+        <MicPermissionModal
+          isOpen={showMicGuide}
+          onClose={() => setShowMicGuide(false)}
+        />
       </div>
     );
   }
@@ -332,6 +356,20 @@ export default function VoiceCommand({
         ))}
       </div>
 
+      {/* Mic Error Notice */}
+      {error && (
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 flex items-center justify-between">
+          <span>⚠️ {error}</span>
+          <button
+            type="button"
+            onClick={() => setShowMicGuide(true)}
+            className="underline font-bold text-amber-800 hover:text-amber-950 shrink-0"
+          >
+            সমাধান দেখুন
+          </button>
+        </div>
+      )}
+
       {/* Biometric Status Footer */}
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
         <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
@@ -340,6 +378,11 @@ export default function VoiceCommand({
         </span>
         <span className="font-semibold text-slate-700">ইমরান হোসেন (৯৫% মিল)</span>
       </div>
+
+      <MicPermissionModal
+        isOpen={showMicGuide}
+        onClose={() => setShowMicGuide(false)}
+      />
     </div>
   );
 }

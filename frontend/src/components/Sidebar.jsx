@@ -11,6 +11,7 @@ import {
   Radio,
   Mic,
   UserCheck,
+  BarChart3,
   X,
   Sparkles,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { name: 'স্ট্রিক্ট মোড', path: '/strict-mode', icon: ShieldCheck },
   { name: 'ভয়েস বায়োমেট্রিক', path: '/voice-security', icon: Radio },
   { name: 'ভয়েস রুম', path: '/voice', icon: Mic },
+  { name: 'অ্যাডমিন কনসোল', path: '/admin', icon: BarChart3 },
   { name: 'প্রোফাইল', path: '/profile', icon: UserCheck },
 ];
 

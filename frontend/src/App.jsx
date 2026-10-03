@@ -16,6 +16,7 @@ import Reminders from './pages/Reminders';
 import StrictMode from './pages/StrictMode';
 import Voice from './pages/Voice';
 import VoiceSecurity from './pages/VoiceSecurity';
+import AdminDashboard from './pages/AdminDashboard';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -231,6 +232,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <VoiceSecurity />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />

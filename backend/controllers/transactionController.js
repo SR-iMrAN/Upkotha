@@ -111,7 +111,7 @@ export const getTransactionById = (req, res, next) => {
 
 export const validateTransaction = (req, res, next) => {
   try {
-    const { type = 'send_money', recipient, agent, amount } = req.body;
+    const { type = 'send_money', recipient, agent, amount, voiceBiometric } = req.body;
     const user = req.user;
 
     const staged = stageTransaction({
@@ -121,6 +121,7 @@ export const validateTransaction = (req, res, next) => {
       agent,
       amount,
       isStrictMode: user.isStrictMode,
+      voiceBiometric,
     });
 
     res.json({

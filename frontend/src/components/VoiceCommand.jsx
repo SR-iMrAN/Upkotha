@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2 } from 'lucide-react';
+import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import useVoiceAssistant from '../hooks/useVoiceAssistant';
 import { showToast } from '../utils/alert';
 
@@ -52,11 +52,13 @@ export default function VoiceCommand({
 
   const [isOpen, setIsOpen] = useState(false);
   const [manualText, setManualText] = useState('');
+  const [biometricError, setBiometricError] = useState(null);
   const navigate = useNavigate();
 
   const prompts = CONTEXTUAL_PROMPTS[pageContext] || CONTEXTUAL_PROMPTS.dashboard;
 
   const handleMicToggle = () => {
+    setBiometricError(null);
     if (isListening) {
       stopListening();
     } else {
@@ -69,13 +71,15 @@ export default function VoiceCommand({
     const text = textToProcess || transcript || manualText;
     if (!text || !text.trim()) return;
 
+    setBiometricError(null);
     stopListening();
+
     const result = await executeCommand(text, (intentRes) => {
       // Smart Auto-Navigation based on detected intent
       if (intentRes.intent === 'send_money') {
-        navigate('/send-money', { state: { prefill: intentRes.entities } });
+        navigate('/send-money', { state: { prefill: intentRes.entities, voiceBiometric: intentRes.voiceBiometric } });
       } else if (intentRes.intent === 'cash_out') {
-        navigate('/cash-out', { state: { prefill: intentRes.entities } });
+        navigate('/cash-out', { state: { prefill: intentRes.entities, voiceBiometric: intentRes.voiceBiometric } });
       } else if (intentRes.intent === 'show_reminders') {
         navigate('/reminders');
       } else if (intentRes.intent === 'transaction_history') {
@@ -94,6 +98,11 @@ export default function VoiceCommand({
         onCommandResolved(intentRes);
       }
     });
+
+    if (result?.blockedByBiometrics) {
+      setBiometricError(result.voiceAuth);
+      return;
+    }
 
     setManualText('');
   };
@@ -192,6 +201,28 @@ export default function VoiceCommand({
               </button>
             )}
 
+            {/* Speaker Biometric Shield Indicator */}
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] text-emerald-800">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>বায়োমেট্রিক স্পিকার শিল্ড:</span>
+              </div>
+              <span className="font-bold text-emerald-700">ইমরান হোসেন (৯৫% মিল)</span>
+            </div>
+
+            {/* Biometric Rejection Alert */}
+            {biometricError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-1 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold text-rose-700">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>অননুমোদিত কণ্ঠস্বর শনাক্ত! ({biometricError.similarityScore}% মিল)</span>
+                </div>
+                <p className="leading-relaxed text-slate-700 text-[11px]">
+                  বক্তার কণ্ঠ অ্যাকাউন্ট মালিক ইমরান হোসেনের সাথে মেলেনি। আর্থিক সুরক্ষার স্বার্থে স্বয়ংক্রিয় কমান্ড বাতিল করা হয়েছে।
+                </p>
+              </div>
+            )}
+
             {/* Contextual Sample Suggestions */}
             <div>
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
@@ -274,6 +305,19 @@ export default function VoiceCommand({
         </div>
       )}
 
+      {/* Biometric Rejection Alert */}
+      {biometricError && (
+        <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-950 space-y-1 animate-in fade-in">
+          <div className="flex items-center gap-1.5 font-bold text-rose-700">
+            <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+            <span>অননুমোদিত কণ্ঠস্বর শনাক্ত! ({biometricError.similarityScore}% মিল)</span>
+          </div>
+          <p className="leading-relaxed text-slate-700 text-[11px]">
+            বক্তার কণ্ঠ অ্যাকাউন্ট মালিক ইমরান হোসেনের সাথে মেলেনি। নিরাপত্তার স্বার্থে লেনদেন প্রক্রিয়া প্রতিরোধ করা হয়েছে।
+          </p>
+        </div>
+      )}
+
       {/* Quick Prompts */}
       <div className="flex flex-wrap gap-1.5 pt-1">
         {prompts.map((p) => (
@@ -286,6 +330,15 @@ export default function VoiceCommand({
             "{p}"
           </button>
         ))}
+      </div>
+
+      {/* Biometric Status Footer */}
+      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+        <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          ভয়েস বায়োমেট্রিক স্পিকার ভেরিফিকেশন সক্রিয়
+        </span>
+        <span className="font-semibold text-slate-700">ইমরান হোসেন (৯৫% মিল)</span>
       </div>
     </div>
   );

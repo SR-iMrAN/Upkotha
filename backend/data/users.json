@@ -11,6 +11,24 @@
     "isStrictMode": false,
     "accountType": "Personal",
     "kycVerified": true,
-    "registeredAt": "2025-06-15T10:00:00Z"
+    "registeredAt": "2025-06-15T10:00:00Z",
+    "voiceProfile": {
+      "isEnrolled": true,
+      "enrolledDate": "2026-10-03T10:52:16.910Z",
+      "voiceprintId": "vp_imran_001_v3",
+      "primarySpeaker": "ইমরান হোসেন",
+      "pitchRangeHz": [
+        110,
+        155
+      ],
+      "fundamentalFrequencyHz": 128.79618094594696,
+      "spectralCentroidHz": 1820.5,
+      "speakingRateWpm": 135,
+      "sampleCount": 7,
+      "securityThreshold": 0.85,
+      "antiSpoofEnabled": true,
+      "lastVerifiedAt": "2026-10-03T11:08:49.717Z",
+      "lastCalibratedAt": "2026-10-03T10:52:16.910Z"
+    }
   }
 ]

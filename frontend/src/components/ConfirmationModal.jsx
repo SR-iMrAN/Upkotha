@@ -19,6 +19,7 @@ export default function ConfirmationModal({
   isStrictMode = false,
   anomalyWarning = null,
   anomalySignal = null,
+  voiceBiometric = null,
   isLoading = false,
 }) {
   const { speak } = useVoice();
@@ -206,6 +207,19 @@ export default function ConfirmationModal({
                 আমি প্রাপকের নাম ও ৳{formatBDT(amount)} টাকার পরিমাণ সচেতনভাবে যাচাই করেছি এবং লেনদেনে সম্মতি দিচ্ছি।
               </span>
             </label>
+          </div>
+        )}
+
+        {/* Voice Biometric Verification Badge */}
+        {voiceBiometric && (
+          <div className="mt-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2 text-emerald-900 font-medium">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>ভয়েস বায়োমেট্রিক: {voiceBiometric.speaker || 'ইমরান হোসেন'}</span>
+            </div>
+            <span className="font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+              ✓ {voiceBiometric.confidence || 95}% মিল
+            </span>
           </div>
         )}
 

@@ -15,6 +15,7 @@ import LockMoney from './pages/LockMoney';
 import Reminders from './pages/Reminders';
 import StrictMode from './pages/StrictMode';
 import Voice from './pages/Voice';
+import VoiceSecurity from './pages/VoiceSecurity';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -222,6 +223,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Voice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/voice-security"
+              element={
+                <ProtectedRoute>
+                  <VoiceSecurity />
                 </ProtectedRoute>
               }
             />

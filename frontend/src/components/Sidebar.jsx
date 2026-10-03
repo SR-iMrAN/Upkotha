@@ -8,6 +8,7 @@ import {
   History,
   BellRing,
   ShieldCheck,
+  Radio,
   Mic,
   UserCheck,
   X,
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { name: 'লেনদেন ইতিহাস', path: '/transactions', icon: History },
   { name: 'বিল ও রিমাইন্ডার', path: '/reminders', icon: BellRing },
   { name: 'স্ট্রিক্ট মোড', path: '/strict-mode', icon: ShieldCheck },
+  { name: 'ভয়েস বায়োমেট্রিক', path: '/voice-security', icon: Radio },
   { name: 'ভয়েস রুম', path: '/voice', icon: Mic },
   { name: 'প্রোফাইল', path: '/profile', icon: UserCheck },
 ];

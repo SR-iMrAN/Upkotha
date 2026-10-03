@@ -70,10 +70,13 @@ export const api = {
   getReminders: () => request('/reminders'),
   completeReminder: (id, payload = {}) => request(`/reminders/${id}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
 
-  // AI & Voice
+  // AI & Voice Biometrics
   extractIntent: (userText, page, action) => request('/ai/intent', { method: 'POST', body: JSON.stringify({ userText, page, action }) }),
   getInsights: () => request('/ai/insights', { method: 'POST' }),
-  verifyVoice: (payload) => request('/voice/verify', { method: 'POST', body: JSON.stringify(payload) }),
+  verifyVoice: (payload = {}) => request('/voice/verify', { method: 'POST', body: JSON.stringify(payload) }),
+  getVoiceProfile: () => request('/voice/profile'),
+  enrollVoice: (payload = {}) => request('/voice/enroll', { method: 'POST', body: JSON.stringify(payload) }),
+  getVoiceLogs: () => request('/voice/logs'),
 };
 
 export default api;

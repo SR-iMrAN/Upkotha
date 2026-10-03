@@ -419,6 +419,7 @@ export default function CashOut() {
           isStrictMode={user?.isStrictMode}
           anomalyWarning={stagedData?.anomalySignal?.messageBangla}
           anomalySignal={stagedData?.anomalySignal}
+          voiceBiometric={stagedData?.voiceBiometric}
           isLoading={isExecuting}
         />
       </div>

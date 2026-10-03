@@ -305,3 +305,70 @@ export const handleOnboardGreeting = async (req, res, next) => {
   }
 };
 
+/**
+ * Natural Bengali Text-to-Speech audio streamer
+ * Serves authentic Bangla audio for browsers like Chrome and Brave
+ * that lack native Bengali TTS voices in Windows SpeechSynthesis.
+ */
+export const streamTtsAudio = async (req, res, next) => {
+  try {
+    const rawText = req.query.text || '';
+    const cleanText = rawText.replace(/<[^>]*>/g, '').trim();
+    if (!cleanText) {
+      return res.status(400).json({ error: 'Text parameter required' });
+    }
+
+    // Split into readable segments (Google TTS works best with chunks under 180 characters)
+    const chunks = [];
+    if (cleanText.length <= 180) {
+      chunks.push(cleanText);
+    } else {
+      const parts = cleanText.split(/([।?!.\n]+)/);
+      let buffer = '';
+      for (const part of parts) {
+        if ((buffer + part).length > 180) {
+          if (buffer.trim()) chunks.push(buffer.trim());
+          buffer = part;
+        } else {
+          buffer += part;
+        }
+      }
+      if (buffer.trim()) chunks.push(buffer.trim());
+    }
+
+    const audioBuffers = [];
+    for (const chunk of (chunks.length > 0 ? chunks : [cleanText.slice(0, 180)])) {
+      if (!chunk.trim()) continue;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunk.trim())}&tl=bn&client=tw-ob`;
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'audio/mpeg,audio/*;q=0.9',
+          },
+        });
+        if (response.ok) {
+          const ab = await response.arrayBuffer();
+          audioBuffers.push(Buffer.from(ab));
+        }
+      } catch (fetchErr) {
+        console.warn('[TTS FETCH WARNING]', fetchErr.message);
+      }
+    }
+
+    if (audioBuffers.length === 0) {
+      return res.status(502).json({ error: 'Failed to synthesize speech audio' });
+    }
+
+    const finalBuffer = Buffer.concat(audioBuffers);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Length', finalBuffer.length);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.end(finalBuffer);
+  } catch (err) {
+    console.error('[TTS CONTROLLER ERROR]', err);
+    next(err);
+  }
+};
+
+

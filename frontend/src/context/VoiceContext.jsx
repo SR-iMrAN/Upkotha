@@ -203,7 +203,7 @@ export function VoiceProvider({ children }) {
     }
 
     try {
-      const voices = synthRef.current.getVoices() || [];
+      const voices = synthRef.current ? (synthRef.current.getVoices() || []) : [];
       const banglaVoice = voices.find(v =>
         v.lang === 'bn-BD' ||
         v.lang === 'bn_BD' ||
@@ -213,17 +213,41 @@ export function VoiceProvider({ children }) {
         v.name.toLowerCase().includes('bengali')
       );
 
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      if (banglaVoice) {
-        utterance.voice = banglaVoice;
+      // If browser lacks a native Bengali speech voice (e.g. Google Chrome or Brave on Windows,
+      // where English voice fails to read Bangla Unicode and only pronounces "comma"):
+      // Stream natural, fluent Bengali voice directly from our backend TTS engine!
+      if (!banglaVoice) {
+        const ttsUrl = `http://localhost:5000/api/voice/tts?text=${encodeURIComponent(cleanText)}`;
+        const player = new Audio(ttsUrl);
+        audioPlayerRef.current = player;
+        setIsSpeaking(true);
+
+        player.onended = () => {
+          setIsSpeaking(false);
+          audioPlayerRef.current = null;
+          if (options.onEnd) options.onEnd();
+        };
+
+        player.onerror = (err) => {
+          console.warn('[BACKEND AUDIO TTS PLAYBACK ERROR]', err);
+          setIsSpeaking(false);
+          audioPlayerRef.current = null;
+        };
+
+        player.play().catch((playErr) => {
+          console.warn('[AUTOPLAY BLOCKED OR ABORTED]', playErr);
+          setIsSpeaking(false);
+        });
+        return;
       }
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.voice = banglaVoice;
       utterance.lang = 'bn-BD';
       utterance.rate = options.rate || 0.95;
       utterance.pitch = options.pitch || 1.0;
 
-      // CRITICAL FOR CHROME & BRAVE:
-      // Store utterance on window object to prevent V8 engine garbage collector
-      // from aborting speech playback after 1-2 seconds mid-sentence.
+      // Prevent Chromium V8 garbage collection mid-speech
       window.__activeSpeechUtterance = utterance;
 
       utterance.onstart = () => {
@@ -242,7 +266,6 @@ export function VoiceProvider({ children }) {
         setIsSpeaking(false);
       };
 
-      // In Chrome/Brave, resume if in paused state
       if (synthRef.current.paused) {
         synthRef.current.resume();
       }

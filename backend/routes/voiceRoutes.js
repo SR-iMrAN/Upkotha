@@ -5,10 +5,14 @@ import {
   enrollVoice,
   getVoiceLogs,
   handleOnboardGreeting,
+  streamTtsAudio,
 } from '../controllers/voiceController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Public TTS stream for natural Bengali voice (supported across Chrome, Brave, Edge)
+router.get('/tts', streamTtsAudio);
 
 // Public onboarding greeting helper (for registration step-by-step guidance)
 router.post('/onboard-greeting', handleOnboardGreeting);

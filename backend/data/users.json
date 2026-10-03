@@ -29,7 +29,7 @@
       "antiSpoofEnabled": true,
       "enrolledDate": "2026-10-03T16:46:24.517Z",
       "lastCalibratedAt": "2026-10-03T16:46:24.517Z",
-      "lastVerifiedAt": "2026-10-03T16:45:41.290Z"
+      "lastVerifiedAt": "2026-10-03T17:24:05.945Z"
     },
     "needsVoiceEnrollment": false
   },
@@ -94,7 +94,7 @@
       "sampleCount": 7,
       "securityThreshold": 0.85,
       "antiSpoofEnabled": true,
-      "lastVerifiedAt": "2026-10-03T15:36:22.160Z",
+      "lastVerifiedAt": "2026-10-03T17:42:14.913Z",
       "lastCalibratedAt": "2026-10-03T10:52:16.910Z"
     }
   }

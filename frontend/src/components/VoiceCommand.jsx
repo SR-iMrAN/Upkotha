@@ -256,6 +256,30 @@ export default function VoiceCommand({
               </button>
             )}
 
+            {/* Quick Typed Command Input (Works seamlessly across Brave, Chrome, etc.) */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (manualText.trim()) handleProcessText(manualText);
+              }}
+              className="flex items-center gap-1.5 pt-1"
+            >
+              <input
+                type="text"
+                value={manualText}
+                onChange={(e) => setManualText(e.target.value)}
+                placeholder="অথবা এখানে লিখুন (যেমন: ব্যালেন্স কত)..."
+                className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 focus:bg-white transition"
+              />
+              <button
+                type="submit"
+                disabled={!manualText.trim()}
+                className="px-3.5 py-2 rounded-xl bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 disabled:opacity-40 transition shadow-xs shrink-0"
+              >
+                পাঠান
+              </button>
+            </form>
+
             {/* Speaker Biometric Shield Indicator */}
             <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[11px] text-emerald-800">
               <div className="flex items-center gap-1.5">
@@ -278,20 +302,27 @@ export default function VoiceCommand({
               </div>
             )}
 
-            {/* Error & Mic Permission Guide Trigger */}
+            {/* Error & Brave Shields Guide Trigger */}
             {error && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 space-y-1">
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 space-y-2">
                 <div className="flex items-center justify-between font-bold text-amber-900">
-                  <span>⚠️ মাইক্রোফোন সমস্যা</span>
+                  <span>{error.includes('Brave') || error.includes('শিল্ড') ? '🛡️ ব্রাউজার প্রাইভেসি শিল্ড' : '⚠️ মাইক্রোফোন সমস্যা'}</span>
                   <button
                     type="button"
                     onClick={() => setShowMicGuide(true)}
-                    className="underline text-[11px] text-amber-800 hover:text-amber-950"
+                    className="underline text-[11px] text-amber-800 hover:text-amber-950 font-semibold"
                   >
                     নির্দেশিকা দেখুন
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-700">{error}</p>
+                <p className="text-[11px] text-slate-700 leading-relaxed">{error}</p>
+                {(error.includes('Brave') || error.includes('শিল্ড') || error.includes('নেটওয়ার্ক')) && (
+                  <div className="p-2.5 rounded-xl bg-white/90 border border-amber-200 text-[11px] text-slate-700 space-y-1">
+                    <p className="font-bold text-emerald-800">💡 সমাধান টিপস:</p>
+                    <p>১. <strong>Brave ব্রাউজার:</strong> অ্যাড্রেস বারের সিংহ (Lion) আইকনে ক্লিক করে "Shields are UP" সাময়িক বন্ধ করুন।</p>
+                    <p>২. অথবা উপরের ইনপুট বক্সে লিখুন বা নিচের উদাহরণ বাটনগুলোতে সরাসরি চাপ দিন।</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -404,6 +435,30 @@ export default function VoiceCommand({
         </div>
       )}
 
+      {/* Quick Input Bar for Manual Text / Brave Fallback */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (manualText.trim()) handleProcessText(manualText);
+        }}
+        className="flex items-center gap-1.5 pt-1"
+      >
+        <input
+          type="text"
+          value={manualText}
+          onChange={(e) => setManualText(e.target.value)}
+          placeholder="এখানে লিখুন বা নির্দেশ দিন (যেমন: ব্যালেন্স কত, ৫০০ টাকা পাঠাও)..."
+          className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 focus:bg-white transition"
+        />
+        <button
+          type="submit"
+          disabled={!manualText.trim()}
+          className="px-3.5 py-2 rounded-xl bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 disabled:opacity-40 transition shadow-xs shrink-0"
+        >
+          কমান্ড দিন
+        </button>
+      </form>
+
       {/* Quick Prompts */}
       <div className="flex flex-wrap gap-1.5 pt-1">
         {prompts.map((p) => (
@@ -418,17 +473,27 @@ export default function VoiceCommand({
         ))}
       </div>
 
-      {/* Mic Error Notice */}
+      {/* Mic / Brave Shield Error Notice */}
       {error && (
-        <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 flex items-center justify-between">
-          <span>⚠️ {error}</span>
-          <button
-            type="button"
-            onClick={() => setShowMicGuide(true)}
-            className="underline font-bold text-amber-800 hover:text-amber-950 shrink-0"
-          >
-            সমাধান দেখুন
-          </button>
+        <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-950 space-y-2">
+          <div className="flex items-center justify-between font-bold text-amber-900">
+            <span>{error.includes('Brave') || error.includes('শিল্ড') ? '🛡️ ব্রাউজার প্রাইভেসি শিল্ড (Brave/Chrome)' : '⚠️ মাইক্রোফোন সমস্যা'}</span>
+            <button
+              type="button"
+              onClick={() => setShowMicGuide(true)}
+              className="underline font-bold text-amber-800 hover:text-amber-950 shrink-0"
+            >
+              সমাধান দেখুন
+            </button>
+          </div>
+          <p className="text-[11px] text-slate-700 leading-relaxed">{error}</p>
+          {(error.includes('Brave') || error.includes('শিল্ড') || error.includes('নেটওয়ার্ক')) && (
+            <div className="p-2.5 rounded-xl bg-white border border-amber-200 text-[11px] text-slate-700 space-y-1">
+              <p className="font-bold text-emerald-800">💡 সমাধান টিপস:</p>
+              <p>১. <strong>Brave ব্রাউজার:</strong> অ্যাড্রেস বারের সিংহ (Lion) আইকনে ক্লিক করে "Shields are UP" সাময়িক বন্ধ করুন।</p>
+              <p>২. অথবা উপরের ইনপুট বক্সে সরাসরি লিখুন বা উদাহরণের বাটনে ক্লিক করুন।</p>
+            </div>
+          )}
         </div>
       )}
 

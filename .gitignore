@@ -1,5 +1,6 @@
 # Ignore markdown files as requested
 *.md
+!/README.md
 docs/
 
 # Dependencies

@@ -85,6 +85,9 @@ export function VoiceProvider({ children }) {
   const recognitionRef = useRef(null);
   const synthRef = useRef(typeof window !== 'undefined' ? window.speechSynthesis : null);
   const audioPlayerRef = useRef(null);
+  const playbackCtxRef = useRef(null);
+  const currentSourceNodeRef = useRef(null);
+  const finalSilenceTimerRef = useRef(null);
 
   // Hardware Audio Pitch Tracker Refs
   const audioContextRef = useRef(null);
@@ -140,11 +143,39 @@ export function VoiceProvider({ children }) {
       };
 
       recognition.onresult = (event) => {
-        let currentText = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentText += event.results[i][0].transcript;
+        let fullText = '';
+        let hasFinalResult = false;
+        for (let i = 0; i < event.results.length; i++) {
+          const piece = event.results[i][0].transcript.trim();
+          if (piece) {
+            fullText += (fullText ? ' ' : '') + piece;
+          }
+          if (event.results[i].isFinal) {
+            hasFinalResult = true;
+          }
         }
-        setTranscript(currentText);
+        if (fullText && fullText.trim()) {
+          setTranscript(fullText.trim());
+        }
+
+        // On mobile: auto-stop after speech finishes
+        if (hasFinalResult) {
+          if (finalSilenceTimerRef.current) clearTimeout(finalSilenceTimerRef.current);
+          finalSilenceTimerRef.current = setTimeout(() => {
+            try {
+              recognition.stop();
+            } catch (e) {}
+          }, 850);
+        }
+      };
+
+      recognition.onspeechend = () => {
+        if (finalSilenceTimerRef.current) clearTimeout(finalSilenceTimerRef.current);
+        finalSilenceTimerRef.current = setTimeout(() => {
+          try {
+            recognition.stop();
+          } catch (e) {}
+        }, 500);
       };
 
       recognition.onerror = (event) => {
@@ -154,7 +185,7 @@ export function VoiceProvider({ children }) {
           showToast.warning('মাইক্রোফোন অ্যাক্সেস ব্লক রয়েছে');
           setIsListening(false);
         } else if (event.error === 'no-speech') {
-          setError('কোনো বক্তব্য শোনা যায়নি। আবার চেষ্টা করুন।');
+          // If no speech, keep existing transcript if any or reset
           setIsListening(false);
         } else if (event.error === 'network') {
           console.info('[VOICE] Speech recognition server unreachable or blocked by browser shields (Brave/Chrome)');
@@ -167,6 +198,7 @@ export function VoiceProvider({ children }) {
       };
 
       recognition.onend = () => {
+        if (finalSilenceTimerRef.current) clearTimeout(finalSilenceTimerRef.current);
         setIsListening(false);
       };
 
@@ -181,14 +213,21 @@ export function VoiceProvider({ children }) {
     if (synthRef.current) {
       synthRef.current.cancel();
     }
+    if (currentSourceNodeRef.current) {
+      try {
+        currentSourceNodeRef.current.stop();
+        currentSourceNodeRef.current.disconnect();
+      } catch (e) {}
+      currentSourceNodeRef.current = null;
+    }
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
-      audioPlayerRef.current = null;
+      audioPlayerRef.current.currentTime = 0;
     }
     setIsSpeaking(false);
   }, []);
 
-  // Natural Bangla Speech Engine with Cross-Browser Compatibility (Chrome, Brave, Edge)
+  // Natural Bangla Speech Engine with Cross-Browser Compatibility (Chrome, Brave, Edge, Mobile Safari/Android)
   const speak = useCallback((text, options = {}) => {
     if (isMuted || !text) return;
 
@@ -196,11 +235,6 @@ export function VoiceProvider({ children }) {
     if (!cleanText) return;
 
     stopSpeaking();
-
-    if (!synthRef.current) {
-      setIsSpeaking(false);
-      return;
-    }
 
     try {
       const voices = synthRef.current ? (synthRef.current.getVoices() || []) : [];
@@ -213,31 +247,89 @@ export function VoiceProvider({ children }) {
         v.name.toLowerCase().includes('bengali')
       );
 
-      // If browser lacks a native Bengali speech voice (e.g. Google Chrome or Brave on Windows,
+      // If browser lacks a native Bengali speech voice (e.g. Google Chrome or Brave on Windows/Android,
       // where English voice fails to read Bangla Unicode and only pronounces "comma"):
       // Stream natural, fluent Bengali voice directly from our backend TTS engine!
       if (!banglaVoice) {
         const ttsUrl = api.getTtsUrl(cleanText);
-        const player = new Audio(ttsUrl);
-        audioPlayerRef.current = player;
         setIsSpeaking(true);
 
-        player.onended = () => {
-          setIsSpeaking(false);
-          audioPlayerRef.current = null;
-          if (options.onEnd) options.onEnd();
+        // Web Audio API path (immune to mobile browser async autoplay blocking)
+        const playWithWebAudio = async () => {
+          try {
+            if (!playbackCtxRef.current && typeof window !== 'undefined') {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) playbackCtxRef.current = new AudioCtx();
+            }
+            const ctx = playbackCtxRef.current;
+            if (ctx) {
+              if (ctx.state === 'suspended') {
+                await ctx.resume();
+              }
+              const res = await fetch(ttsUrl);
+              if (!res.ok) throw new Error(`TTS HTTP error ${res.status}`);
+              const arrayBuffer = await res.arrayBuffer();
+              const decoded = await ctx.decodeAudioData(arrayBuffer);
+
+              const source = ctx.createBufferSource();
+              source.buffer = decoded;
+              source.connect(ctx.destination);
+              currentSourceNodeRef.current = source;
+
+              source.onended = () => {
+                setIsSpeaking(false);
+                currentSourceNodeRef.current = null;
+                if (options.onEnd) options.onEnd();
+              };
+
+              source.start(0);
+              return true;
+            }
+          } catch (webAudioErr) {
+            console.warn('[WEB AUDIO TTS NOTICE]', webAudioErr);
+          }
+          return false;
         };
 
-        player.onerror = (err) => {
-          console.warn('[BACKEND AUDIO TTS PLAYBACK ERROR]', err);
-          setIsSpeaking(false);
-          audioPlayerRef.current = null;
-        };
+        playWithWebAudio().then((succeeded) => {
+          if (succeeded) return;
 
-        player.play().catch((playErr) => {
-          console.warn('[AUTOPLAY BLOCKED OR ABORTED]', playErr);
-          setIsSpeaking(false);
+          // HTML5 Audio Fallback
+          let player = audioPlayerRef.current;
+          if (!player) {
+            player = new Audio();
+            audioPlayerRef.current = player;
+          }
+          player.src = ttsUrl;
+          player.onended = () => {
+            setIsSpeaking(false);
+            if (options.onEnd) options.onEnd();
+          };
+          player.onerror = (err) => {
+            console.warn('[BACKEND AUDIO TTS PLAYBACK ERROR]', err);
+            setIsSpeaking(false);
+          };
+          const playPromise = player.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((playErr) => {
+              console.warn('[AUTOPLAY BLOCKED OR ABORTED, FALLING BACK TO SYNTHESIS]', playErr);
+              if (synthRef.current) {
+                const fallbackUtterance = new SpeechSynthesisUtterance(cleanText);
+                fallbackUtterance.lang = 'bn-BD';
+                fallbackUtterance.onend = () => setIsSpeaking(false);
+                fallbackUtterance.onerror = () => setIsSpeaking(false);
+                synthRef.current.speak(fallbackUtterance);
+              } else {
+                setIsSpeaking(false);
+              }
+            });
+          }
         });
+        return;
+      }
+
+      if (!synthRef.current) {
+        setIsSpeaking(false);
         return;
       }
 
@@ -297,6 +389,26 @@ export function VoiceProvider({ children }) {
     lastMeasuredPitchRef.current = null;
     pitchSamplesRef.current = [];
 
+    // Pre-unlock Web Audio API context AND audio element inside user tap event stack
+    if (typeof window !== 'undefined') {
+      try {
+        if (!playbackCtxRef.current) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) playbackCtxRef.current = new AudioCtx();
+        }
+        if (playbackCtxRef.current && playbackCtxRef.current.state === 'suspended') {
+          playbackCtxRef.current.resume();
+        }
+        if (!audioPlayerRef.current) {
+          audioPlayerRef.current = new Audio();
+        }
+        audioPlayerRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        audioPlayerRef.current.play().then(() => {
+          audioPlayerRef.current.pause();
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
     const triggerRecognition = () => {
       if (!recognitionRef.current) return;
       try {
@@ -310,14 +422,35 @@ export function VoiceProvider({ children }) {
             } catch (e) {
               console.warn('Recognition start retry failed', e);
             }
-          }, 150);
+          }, 100);
         } catch (e) {
           console.warn('Recognition cycle failed', e);
         }
       }
     };
 
-    // First acquire audio stream for pitch tracker without blocking SpeechRecognition
+    const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // Mobile devices (Android/iOS) do NOT permit parallel microphone streams (getUserMedia + SpeechRecognition).
+      // Trigger SpeechRecognition immediately and synchronously within the user tap event stack!
+      let baselinePitch = 135;
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('upkotha_user') || '{}');
+        if (storedUser?.voiceProfile?.fundamentalFrequencyHz) {
+          baselinePitch = storedUser.voiceProfile.fundamentalFrequencyHz;
+        } else if (storedUser?.voiceProfile?.pitchRangeHz) {
+          baselinePitch = Math.round((storedUser.voiceProfile.pitchRangeHz[0] + storedUser.voiceProfile.pitchRangeHz[1]) / 2);
+        }
+      } catch (e) {}
+      lastMeasuredPitchRef.current = baselinePitch;
+      triggerRecognition();
+      return;
+    }
+
+    // On Desktop:
+    triggerRecognition();
+
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       navigator.mediaDevices
         .getUserMedia({ audio: true })
@@ -346,16 +479,10 @@ export function VoiceProvider({ children }) {
             animFrameRef.current = requestAnimationFrame(trackPitch);
           };
           trackPitch();
-
-          // Safely trigger SpeechRecognition after audio device endpoint is stable
-          setTimeout(triggerRecognition, 180);
         })
         .catch((err) => {
           console.warn('Live pitch tracking microphone unavailable:', err);
-          triggerRecognition();
         });
-    } else {
-      triggerRecognition();
     }
   }, [stopSpeaking]);
 
@@ -393,31 +520,35 @@ export function VoiceProvider({ children }) {
       const measuredPitch = lastMeasuredPitchRef.current;
 
       // ─── 1. REAL VOICE BIOMETRIC VERIFICATION GATE ──────────────
-      // Verifies whether the speaker's vocal frequency matches Imran Hossain
+      // Verifies whether the speaker's vocal frequency matches the enrolled user
       let biometricResult = null;
-      if (measuredPitch && measuredPitch > 0) {
-        biometricResult = await api.verifyVoice({
-          audioFeatures: { pitchHz: measuredPitch },
-          sampleTranscript: spokenText.trim(),
-        });
+      try {
+        if (measuredPitch && measuredPitch > 0) {
+          biometricResult = await api.verifyVoice({
+            audioFeatures: { pitchHz: measuredPitch },
+            sampleTranscript: spokenText.trim(),
+          });
 
-        setLastBiometricStatus(biometricResult);
+          setLastBiometricStatus(biometricResult);
 
-        // If biometric verification FAILS (Imposter / Different voice detected):
-        if (!biometricResult.isVerified) {
-          showToast.error(`কণ্ঠস্বর অমিল (${Math.round(measuredPitch)} Hz): অননুমোদিত নির্দেশ বাতিল!`);
-          
-          const warningSpeech = `সতর্কতা: আপনার কণ্ঠস্বর অ্যাকাউন্ট মালিকের সাথে মেলেনি। অপরিচিত ব্যক্তির ভয়েস নির্দেশনায় লেনদেন বাতিল করা হয়েছে।`;
-          if (!isMuted) {
-            speak(warningSpeech);
+          // If biometric verification FAILS (Imposter / Different voice detected):
+          if (!biometricResult.isVerified) {
+            showToast.error(`কণ্ঠস্বর অমিল (${Math.round(measuredPitch)} Hz): অননুমোদিত নির্দেশ বাতিল!`);
+            
+            const warningSpeech = `সতর্কতা: আপনার কণ্ঠস্বর অ্যাকাউন্ট মালিকের সাথে মেলেনি। অপরিচিত ব্যক্তির ভয়েস নির্দেশনায় লেনদেন বাতিল করা হয়েছে।`;
+            if (!isMuted) {
+              speak(warningSpeech);
+            }
+
+            return {
+              blockedByBiometrics: true,
+              voiceAuth: biometricResult,
+              messageBangla: warningSpeech,
+            };
           }
-
-          return {
-            blockedByBiometrics: true,
-            voiceAuth: biometricResult,
-            messageBangla: warningSpeech,
-          };
         }
+      } catch (bioErr) {
+        console.warn('[BIOMETRIC VERIFICATION NON-BLOCKING NOTICE]', bioErr);
       }
 
       // ─── 2. GEMINI AI INTENT EXTRACTION ────────────────────────

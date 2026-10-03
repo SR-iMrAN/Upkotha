@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2, ShieldCheck, ShieldAlert, Check } from 'lucide-react';
 import useVoiceAssistant from '../hooks/useVoiceAssistant';
 import { useAuth } from '../context/AuthContext';
 import { showToast } from '../utils/alert';
@@ -67,6 +67,9 @@ export default function VoiceCommand({
     setBiometricError(null);
     if (isListening) {
       stopListening();
+      if (transcript && transcript.trim().length > 1) {
+        handleProcessText(transcript);
+      }
       return;
     }
 
@@ -165,9 +168,15 @@ export default function VoiceCommand({
               setShowEnrollModal(true);
               return;
             }
-            setIsOpen(!isOpen);
-            if (!isOpen) startListening();
-            else stopListening();
+            if (isListening) {
+              stopListening();
+              if (transcript && transcript.trim().length > 1) {
+                handleProcessText(transcript);
+              }
+              return;
+            }
+            setIsOpen(true);
+            startListening();
           }}
           className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 ${
             isListening
@@ -208,12 +217,27 @@ export default function VoiceCommand({
             {/* Listening Indicator & Transcript */}
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 min-h-[70px] flex flex-col justify-center">
               {isListening ? (
-                <div className="text-center space-y-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-rose-600 animate-ping mr-1.5" />
-                  <span className="text-xs text-rose-600 font-semibold">শুনছি... পরিষ্কার বাংলায় বলুন</span>
-                  <p className="text-sm font-bold text-slate-800 mt-1 min-h-[20px]">
+                <div className="text-center space-y-2">
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
+                    <span className="text-xs text-rose-600 font-bold">শুনছি... পরিষ্কার বাংলায় বলুন</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-800 min-h-[22px] px-1">
                     {transcript || 'বলা শুরু করুন...'}
                   </p>
+                  {transcript && transcript.trim().length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopListening();
+                        handleProcessText(transcript);
+                      }}
+                      className="mt-2 w-full py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition animate-pulse"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>✓ বলা শেষ? প্রসেস করুন</span>
+                    </button>
+                  )}
                 </div>
               ) : isProcessing ? (
                 <div className="flex items-center justify-center gap-2 text-xs text-emerald-700 font-medium">
@@ -403,20 +427,24 @@ export default function VoiceCommand({
 
       {/* Spoken Text Display */}
       {(isListening || transcript) && (
-        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-          <div>
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="flex-1">
             <span className="text-slate-400 block text-[10px]">
               {isListening ? 'শুনছি...' : 'বক্তব্য:'}
             </span>
             <span className="font-semibold text-slate-900">{transcript || 'বলুন...'}</span>
           </div>
-          {transcript && !isListening && (
+          {transcript && transcript.trim().length > 0 && (
             <button
               type="button"
-              onClick={() => handleProcessText(transcript)}
-              className="px-2.5 py-1 rounded-lg bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition"
+              onClick={() => {
+                if (isListening) stopListening();
+                handleProcessText(transcript);
+              }}
+              className="px-3 py-1.5 rounded-lg bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-800 transition flex items-center justify-center gap-1 shrink-0 active:scale-95 shadow-xs"
             >
-              প্রসেস করুন
+              <span>{isListening ? '✓ বলা শেষ, প্রসেস করুন' : 'প্রসেস করুন'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

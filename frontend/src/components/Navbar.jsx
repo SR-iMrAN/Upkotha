@@ -18,8 +18,8 @@ export default function Navbar({
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
-          aria-label="Toggle menu"
+          className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+          aria-label="ন্যাভিগেশন মেনু খুলুন"
         >
           <Menu className="w-5 h-5" />
         </button>

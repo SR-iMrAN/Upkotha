@@ -18,6 +18,14 @@ export default function Layout({
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
+      {/* Skip to Main Content for Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-emerald-700 focus:text-white focus:font-semibold focus:rounded-xl focus:shadow-lg focus:ring-2 focus:ring-emerald-400"
+      >
+        সরাসরি মূল কনটেন্টে যান
+      </a>
+
       {/* Sidebar Navigation */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -39,7 +47,7 @@ export default function Layout({
         />
 
         {/* Dynamic Route Content */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto">
+        <main id="main-content" tabIndex="-1" className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto outline-none">
           {children}
         </main>
 

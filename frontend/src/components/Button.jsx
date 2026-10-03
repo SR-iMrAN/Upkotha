@@ -17,12 +17,12 @@ export default function Button({
   onClick,
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-xl';
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none rounded-xl';
 
   const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5 h-8',
-    md: 'text-sm px-4 py-2.5 gap-2 h-11',
-    lg: 'text-base px-6 py-3.5 gap-2.5 h-13',
+    sm: 'text-xs px-3 py-2 gap-1.5 min-h-[38px] h-9',
+    md: 'text-sm px-4 py-2.5 gap-2 min-h-[44px] h-11',
+    lg: 'text-base px-6 py-3.5 gap-2.5 min-h-[48px] h-13',
   };
 
   const variantStyles = {

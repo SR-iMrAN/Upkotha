@@ -121,20 +121,25 @@ export default function VoiceCommand({
             if (!isOpen) startListening();
             else stopListening();
           }}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all duration-200 active:scale-95 ${
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400 ${
             isListening
               ? 'bg-rose-600 ring-4 ring-rose-300 animate-pulse'
               : 'bg-emerald-700 hover:bg-emerald-800 ring-2 ring-emerald-500/30'
           }`}
           title="উপকথা ভয়েস কমান্ড (বাংলায় বলুন)"
-          aria-label="Voice Command"
+          aria-label={isListening ? "ভয়েস কমান্ড রেকর্ডিং বন্ধ করুন" : "উপকথা ভয়েস কমান্ড চালু করুন"}
         >
           {isListening ? <Mic className="w-6 h-6 animate-bounce" /> : <Mic className="w-6 h-6" />}
         </button>
 
         {/* Modal / Dialog when active */}
         {isOpen && (
-          <div className="absolute bottom-18 right-0 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="উপকথা ভয়েস কমান্ড উইন্ডো"
+            className="absolute bottom-18 right-0 w-80 sm:w-96 bg-white rounded-2xl border border-slate-200 shadow-2xl p-4 space-y-3 animate-in fade-in slide-from-bottom-2"
+          >
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-1.5 text-emerald-800 font-semibold text-xs">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />

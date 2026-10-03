@@ -46,6 +46,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar Container */}
       <aside
+        role="navigation"
+        aria-label="প্রধান ন্যাভিগেশন মেনু"
         className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-slate-900 text-slate-200 flex flex-col justify-between border-r border-slate-800 transition-transform duration-200 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -65,7 +67,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
             <button
               onClick={onClose}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+              aria-label="ন্যাভিগেশন মেনু বন্ধ করুন"
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <X className="w-5 h-5" />
             </button>

@@ -1,15 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MicOff, ShieldAlert, X, RefreshCw, CheckCircle2, Lock } from 'lucide-react';
 import Button from './Button';
 
 /**
  * MicPermissionModal: Plain-Bangla illustrated guide to recover from microphone permission blocks.
+ * Conforms to WCAG 2.1 modal dialog keyboard navigation & ARIA standards.
  */
 export default function MicPermissionModal({ isOpen, onClose, onRetry }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mic-guide-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in"
+    >
       <div className="bg-white rounded-3xl border border-slate-200 max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
         <div className="flex items-start justify-between">
           <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center">
@@ -18,7 +34,8 @@ export default function MicPermissionModal({ isOpen, onClose, onRetry }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg"
+            aria-label="নির্দেশিকা বন্ধ করুন"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <X className="w-5 h-5" />
           </button>
@@ -28,7 +45,7 @@ export default function MicPermissionModal({ isOpen, onClose, onRetry }) {
           <span className="text-xs font-bold uppercase tracking-wider text-rose-700 block">
             মাইক্রোফোন অনুমতি নির্দেশিকা
           </span>
-          <h2 className="text-lg font-extrabold text-slate-900 mt-1">
+          <h2 id="mic-guide-title" className="text-lg font-extrabold text-slate-900 mt-1">
             মাইক্রোফোন ব্যবহারের অনুমতি দিন
           </h2>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">

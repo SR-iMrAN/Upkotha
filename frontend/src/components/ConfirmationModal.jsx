@@ -61,6 +61,16 @@ export default function ConfirmationModal({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen && !isLoading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
+
   if (!isOpen) return null;
 
   const totalDeduction = amount + fee;
@@ -83,7 +93,12 @@ export default function ConfirmationModal({
   const formatBDT = (val) => new Intl.NumberFormat('bn-BD').format(val || 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmation-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+    >
       <div
         className={`bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative transition-all ${
           isStrictMode
@@ -95,7 +110,8 @@ export default function ConfirmationModal({
         <button
           onClick={onClose}
           disabled={isLoading}
-          className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+          aria-label="মডাল বন্ধ করুন"
+          className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-500"
           title="বন্ধ করুন"
         >
           <X className="w-5 h-5" />
@@ -112,7 +128,10 @@ export default function ConfirmationModal({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className={`font-bold text-slate-900 ${isStrictMode ? 'text-lg' : 'text-base'}`}>
+              <h3
+                id="confirmation-modal-title"
+                className={`font-bold text-slate-900 ${isStrictMode ? 'text-lg' : 'text-base'}`}
+              >
                 {title}
               </h3>
               {isStrictMode && (

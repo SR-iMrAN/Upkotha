@@ -52,11 +52,12 @@
     "lastPaid": "০১ অক্টোবর ২০২৬",
     "lastAmount": 2000,
     "daysUntil": 29,
-    "status": "PENDING",
-    "statusBangla": "আসন্ন",
+    "status": "COMPLETED",
+    "statusBangla": "পরিশোধিত",
     "isRecurring": true,
     "frequency": "monthly",
     "detectedPattern": "প্রতি মাসের শুরুতে ১ তারিখে সহায়তা",
-    "icon": "💝"
+    "icon": "💝",
+    "completedAt": "2026-10-03T13:15:59.719Z"
   }
 ]

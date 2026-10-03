@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import VoiceGuide from '../components/VoiceGuide';
 import VoiceCommand from '../components/VoiceCommand';
 import Button from '../components/Button';
 import useVoiceAssistant from '../hooks/useVoiceAssistant';
 import { useAuth } from '../context/AuthContext';
+import VoiceEnrollModal from '../components/VoiceEnrollModal';
 import {
   Mic,
   MicOff,
@@ -30,6 +32,7 @@ const TEST_COMMANDS = [
 
 export default function Voice() {
   const { user, toggleStrictMode } = useAuth();
+  const navigate = useNavigate();
   const {
     isListening,
     isProcessing,
@@ -46,6 +49,7 @@ export default function Voice() {
 
   const [intentResult, setIntentResult] = useState(null);
   const [activeTab, setActiveTab] = useState('test');
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
 
   const handleTestCommand = async (commandText) => {
     stopListening();
@@ -54,6 +58,18 @@ export default function Voice() {
     });
     if (res) setIntentResult(res);
   };
+
+  // Auto-execute when speech recording completes
+  const prevListeningRef = useRef(isListening);
+  useEffect(() => {
+    if (prevListeningRef.current && !isListening && transcript && transcript.trim().length > 1 && !isProcessing) {
+      const timer = setTimeout(() => {
+        handleTestCommand(transcript);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, transcript, isProcessing]);
 
   return (
     <Layout
@@ -113,8 +129,17 @@ export default function Voice() {
               <button
                 type="button"
                 onClick={() => {
-                  if (isListening) stopListening();
-                  else startListening();
+                  if (isListening) {
+                    stopListening();
+                    return;
+                  }
+                  const isImran = user?.id === 'usr_imran_001';
+                  const isEnrolled = Boolean(user?.voiceProfile?.isEnrolled && !user?.needsVoiceEnrollment);
+                  if (!isImran && !isEnrolled) {
+                    setShowEnrollModal(true);
+                    return;
+                  }
+                  startListening();
                 }}
                 className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center text-white transition-all duration-300 active:scale-95 ${
                   isListening
@@ -230,18 +255,6 @@ export default function Voice() {
               </div>
             </div>
 
-            {/* Extracted Entities */}
-            {intentResult.entities && Object.keys(intentResult.entities).length > 0 && (
-              <div>
-                <span className="text-xs font-semibold text-slate-600 block mb-1">
-                  শনাক্তকৃত এন্টিটি (Extracted Entities):
-                </span>
-                <pre className="p-3 rounded-xl bg-slate-900 text-emerald-300 text-xs font-mono overflow-x-auto">
-                  {JSON.stringify(intentResult.entities, null, 2)}
-                </pre>
-              </div>
-            )}
-
             {/* Spoken Bangla Reply */}
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
               <div>
@@ -259,6 +272,44 @@ export default function Voice() {
                 <Play className="w-4 h-4 fill-current" />
               </button>
             </div>
+
+            {/* Direct Action Navigation Button if actionable */}
+            {intentResult.intent && intentResult.intent !== 'help' && intentResult.intent !== 'check_balance' && (
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  fullWidth
+                  size="md"
+                  onClick={() => {
+                    if (intentResult.intent === 'send_money') {
+                      navigate('/send-money', { state: { prefill: intentResult.entities, voiceBiometric: intentResult.voiceBiometric } });
+                    } else if (intentResult.intent === 'cash_out') {
+                      navigate('/cash-out', { state: { prefill: intentResult.entities, voiceBiometric: intentResult.voiceBiometric } });
+                    } else if (intentResult.intent === 'show_reminders') {
+                      navigate('/reminders');
+                    } else if (intentResult.intent === 'transaction_history') {
+                      navigate('/transactions', { state: { query: intentResult.entities?.recipient || '' } });
+                    } else if (intentResult.intent === 'lock_money') {
+                      navigate('/lock-money', { state: { prefill: intentResult.entities } });
+                    } else if (intentResult.intent === 'strict_mode') {
+                      navigate('/strict-mode');
+                    } else if (intentResult.intent === 'voice_security') {
+                      navigate('/voice-security');
+                    } else if (intentResult.intent === 'admin_console' || intentResult.intent === 'admin') {
+                      navigate('/admin');
+                    } else if (intentResult.intent === 'profile') {
+                      navigate('/profile');
+                    } else if (intentResult.intent === 'dashboard') {
+                      navigate('/dashboard');
+                    }
+                  }}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>এই নির্দেশনায় সরাসরি পেইজে যান</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -274,6 +325,12 @@ export default function Voice() {
             ৩. কোনো লেনদেন কেবলমাত্র কথার ভিত্তিতে কার্যকর হয় না — পিন দেওয়া বাধ্যতামূলক।
           </p>
         </div>
+
+        <VoiceEnrollModal
+          isOpen={showEnrollModal}
+          onClose={() => setShowEnrollModal(false)}
+          onEnrolled={() => startListening()}
+        />
       </div>
     </Layout>
   );

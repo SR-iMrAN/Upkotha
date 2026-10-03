@@ -4,10 +4,14 @@ import {
   verifySpeaker,
   enrollVoice,
   getVoiceLogs,
+  handleOnboardGreeting,
 } from '../controllers/voiceController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Public onboarding greeting helper (for registration step-by-step guidance)
+router.post('/onboard-greeting', handleOnboardGreeting);
 
 router.use(requireAuth);
 

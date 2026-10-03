@@ -3,6 +3,7 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import VoiceCommand from './VoiceCommand';
 import NetworkStatusBanner from './NetworkStatusBanner';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Layout: Master layout wrapper for all authenticated application routes
@@ -10,11 +11,16 @@ import NetworkStatusBanner from './NetworkStatusBanner';
 export default function Layout({
   children,
   title = 'ড্যাশবোর্ড',
-  isStrictMode = false,
+  isStrictMode,
   onToggleStrictMode,
-  userName = 'ইমরান',
+  userName,
 }) {
+  const { user, toggleStrictMode } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const activeUserName = userName || user?.name || 'ইমরান';
+  const activeStrictMode = isStrictMode !== undefined ? isStrictMode : (user?.isStrictMode || false);
+  const handleToggleStrictMode = onToggleStrictMode || toggleStrictMode;
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -40,9 +46,9 @@ export default function Layout({
         {/* Top Navbar */}
         <Navbar
           title={title}
-          userName={userName}
-          isStrictMode={isStrictMode}
-          onToggleStrictMode={onToggleStrictMode}
+          userName={activeUserName}
+          isStrictMode={activeStrictMode}
+          onToggleStrictMode={handleToggleStrictMode}
           onToggleSidebar={() => setSidebarOpen(true)}
         />
 

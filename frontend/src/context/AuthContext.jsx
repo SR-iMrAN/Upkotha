@@ -20,6 +20,7 @@ const DEFAULT_DEMO_USER = {
 };
 
 const STORAGE_KEY = 'upkotha_auth_session';
+const REGISTRY_KEY = 'upkotha_registered_accounts';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -41,72 +42,169 @@ export function AuthProvider({ children }) {
 
   const [isLoading, setIsLoading] = useState(false);
 
+  // Sync any updates to registered accounts registry
+  const syncToRegistry = (updatedUser) => {
+    if (!updatedUser || !updatedUser.phone) return;
+    try {
+      const cleanPhone = updatedUser.phone.replace(/\D/g, '');
+      const existing = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
+      const filtered = existing.filter((a) => (a.phone ? a.phone.replace(/\D/g, '') : '') !== cleanPhone);
+      localStorage.setItem(REGISTRY_KEY, JSON.stringify([...filtered, updatedUser]));
+    } catch (e) {
+      console.warn('Failed to sync user to registry', e);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     }
   }, [user]);
 
-  // Demo Login
-  const login = (phone, pin) => {
+  // Account Login with true multi-account resolution
+  const login = async (phone, pin) => {
     setIsLoading(true);
+    const cleanInputPhone = phone ? phone.replace(/\D/g, '') : '';
+    const cleanPin = pin ? String(pin).trim() : '';
 
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        setIsLoading(false);
-        // Clean phone string
-        const cleanPhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+    try {
+      let loggedUser = null;
 
-        // Allow demo login with default demo PIN '1234' or any valid 4-digit PIN for demo testing
-        if (pin === '1234' || (cleanPhone.length >= 10 && pin && pin.length === 4)) {
-          const activeUser = {
-            ...DEFAULT_DEMO_USER,
-            phone: phone || DEFAULT_DEMO_USER.phone,
-          };
-          setUser(activeUser);
-          setIsAuthenticated(true);
-          localStorage.setItem('upkotha_is_logged_in', 'true');
-          showToast.success(`স্বাগতম, ${activeUser.name}! সফলভাবে লগইন হয়েছে।`);
-          resolve(activeUser);
-        } else {
-          showToast.error('ভুল পিন কোড। ডেমো পিন: 1234 ব্যবহার করুন।');
-          reject(new Error('অবৈধ ক্রেডেনশিয়াল'));
+      // 1. Attempt server-side login
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, pin: cleanPin }),
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          loggedUser = data.user;
         }
-      }, 500);
-    });
+      } catch (backendErr) {
+        console.warn('Backend login unavailable, checking local registry', backendErr);
+      }
+
+      // 2. Fallback to client-side registered accounts
+      if (!loggedUser) {
+        const localAccounts = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
+        const matched = localAccounts.find((acc) => {
+          const accPhoneClean = acc.phone ? acc.phone.replace(/\D/g, '') : '';
+          return accPhoneClean === cleanInputPhone && String(acc.pin) === cleanPin;
+        });
+        if (matched) {
+          loggedUser = matched;
+        }
+      }
+
+      // 3. Fallback to default Imran demo account
+      if (!loggedUser) {
+        const imranPhoneClean = DEFAULT_DEMO_USER.phone.replace(/\D/g, '');
+        if ((cleanInputPhone === imranPhoneClean || cleanInputPhone === '01712345678') && cleanPin === '1234') {
+          loggedUser = { ...DEFAULT_DEMO_USER };
+        }
+      }
+
+      if (!loggedUser) {
+        showToast.error('ভুল মোবাইল নম্বর বা গোপন পিন কোড দেওয়া হয়েছে');
+        throw new Error('অবৈধ ক্রেডেনশিয়াল');
+      }
+
+      setUser(loggedUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('upkotha_is_logged_in', 'true');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
+      localStorage.setItem('upkotha_last_logged_phone', loggedUser.phone);
+      showToast.success(`স্বাগতম, ${loggedUser.name}! সফলভাবে লগইন হয়েছে।`);
+      return loggedUser;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Demo Registration
-  const register = (name, phone, pin) => {
+  // Register new account with clean initial state and isolated identity
+  const register = async (name, phone, pin) => {
     setIsLoading(true);
 
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        setIsLoading(false);
-        if (!name || !phone || !pin || pin.length !== 4) {
-          showToast.error('অনুগ্রহ করে সঠিক নাম, মোবাইল নম্বর এবং ৪ ডিজিটের পিন দিন');
-          reject(new Error('তথ্য অসম্পূর্ণ'));
-          return;
+    try {
+      if (!name || !phone || !pin || pin.length !== 4) {
+        showToast.error('অনুগ্রহ করে সঠিক নাম, মোবাইল নম্বর এবং ৪ ডিজিটের পিন দিন');
+        throw new Error('তথ্য অসম্পূর্ণ');
+      }
+
+      let backendUser = null;
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, pin }),
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          backendUser = data.user;
         }
+      } catch (err) {
+        console.warn('Backend register call failed, using client fallback', err);
+      }
 
-        const newUser = {
-          id: `usr_${Date.now()}`,
-          name,
-          phone,
-          availableBalance: 15000,
-          lockedBalance: 3000,
-          isStrictMode: false,
-          role: 'DEMO_USER',
-          contacts: DEFAULT_DEMO_USER.contacts,
-        };
+      const userId = backendUser?.id || `usr_${Date.now()}`;
+      const newUser = {
+        id: userId,
+        name: name.trim(),
+        phone: phone.trim(),
+        pin: pin.trim(),
+        availableBalance: 15000,
+        lockedBalance: 0,
+        totalBalance: 15000,
+        isStrictMode: false,
+        role: 'USER',
+        isNewAccount: true,
+        needsVoiceEnrollment: true,
+        contacts: [],
+        voiceProfile: backendUser?.voiceProfile || {
+          isEnrolled: false,
+          primarySpeaker: name.trim(),
+          pitchRangeHz: [120, 180],
+        },
+      };
 
-        setUser(newUser);
-        setIsAuthenticated(true);
-        localStorage.setItem('upkotha_is_logged_in', 'true');
-        showToast.success(`অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! স্বাগতম ${name}`);
-        resolve(newUser);
-      }, 600);
-    });
+      // Initialize empty storage for this new user so history, reminders, locks are clean
+      localStorage.setItem(`upkotha_transactions_${userId}`, JSON.stringify([]));
+      localStorage.setItem(`upkotha_reminders_${userId}`, JSON.stringify([]));
+      localStorage.setItem(`upkotha_locks_${userId}`, JSON.stringify([]));
+
+      // Persist in accounts registry
+      try {
+        const localAccounts = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
+        const cleanNewPhone = newUser.phone.replace(/\D/g, '');
+        const updatedAccounts = [
+          ...localAccounts.filter((a) => (a.phone ? a.phone.replace(/\D/g, '') : '') !== cleanNewPhone),
+          newUser,
+        ];
+        localStorage.setItem(REGISTRY_KEY, JSON.stringify(updatedAccounts));
+        localStorage.setItem(
+          'upkotha_last_registered_account',
+          JSON.stringify({
+            id: newUser.id,
+            name: newUser.name,
+            phone: newUser.phone,
+            pin: newUser.pin,
+          })
+        );
+        localStorage.setItem('upkotha_last_logged_phone', newUser.phone);
+      } catch (e) {
+        console.warn('Failed to update accounts registry in localStorage', e);
+      }
+
+      setUser(newUser);
+      setIsAuthenticated(true);
+      localStorage.setItem('upkotha_is_logged_in', 'true');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+      showToast.success(`অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! স্বাগতম ${name}`);
+      return newUser;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Logout
@@ -125,20 +223,43 @@ export function AuthProvider({ children }) {
       } else {
         showToast.info('স্ট্রিক্ট মোড নিষ্ক্রিয় করা হয়েছে');
       }
-      return {
+      const updated = {
         ...prev,
         isStrictMode: nextMode,
       };
+      syncToRegistry(updated);
+      return updated;
     });
   };
 
   // Update Balances
   const updateBalance = (newAvailable, newLocked) => {
-    setUser((prev) => ({
-      ...prev,
-      availableBalance: newAvailable !== undefined ? newAvailable : prev.availableBalance,
-      lockedBalance: newLocked !== undefined ? newLocked : prev.lockedBalance,
-    }));
+    setUser((prev) => {
+      const updated = {
+        ...prev,
+        availableBalance: newAvailable !== undefined ? newAvailable : prev.availableBalance,
+        lockedBalance: newLocked !== undefined ? newLocked : prev.lockedBalance,
+      };
+      syncToRegistry(updated);
+      return updated;
+    });
+  };
+
+  // Update Voice Biometric Profile
+  const updateVoiceProfile = (newProfile) => {
+    setUser((prev) => {
+      const updated = {
+        ...prev,
+        needsVoiceEnrollment: false,
+        voiceProfile: {
+          ...(prev?.voiceProfile || {}),
+          ...newProfile,
+          isEnrolled: true,
+        },
+      };
+      syncToRegistry(updated);
+      return updated;
+    });
   };
 
   return (
@@ -152,6 +273,7 @@ export function AuthProvider({ children }) {
         logout,
         toggleStrictMode,
         updateBalance,
+        updateVoiceProfile,
       }}
     >
       {children}

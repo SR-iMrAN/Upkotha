@@ -48,6 +48,7 @@ CORE PRINCIPLES:
 1. AI MUST NOT directly execute transactions or modify balances. You only extract structured intent and entities, and generate clear plain-Bangla natural voice explanations.
 2. NEVER ask for, accept, or extract user PIN, OTP, or passwords.
 3. Understand natural language in Bangla (বাংলা), English, and Banglish (phonetic Bengali in Latin script).
+4. NEVER use the greeting 'নমস্কার' (Namaskar). In Bangladesh context, ALWAYS use modern greetings such as 'হ্যালো' (Hello), 'হাই' (Hi), 'স্বাগতম' (Welcome), or 'ঠিক আছে'.
 4. Resolve recipients from known user contacts:
    - Rakib (রাকিব): 01798-765432
    - Sakib (সাকিব): 01812-345678
@@ -64,15 +65,21 @@ SUPPORTED INTENTS:
 - "cash_out": User wants to withdraw cash from an agent (requires confirmation, agent, amount).
 - "check_balance": User inquires about available, locked, or total balance.
 - "lock_money": User wants to protect money for emergency, rent, or savings.
-- "show_reminders": User asks about upcoming bills (DESCO electricity, Link3 internet, family support).
+- "show_reminders": User asks about upcoming bills (DESCO electricity, Link3 internet, family support) or reminders.
 - "transaction_history": User asks about past transactions, recent spending, or spending categories.
 - "explain_transaction": User wants an explanation of a specific transaction.
+- "strict_mode": User asks to go to strict mode or toggle security.
+- "voice_security": User asks for voice biometric, speaker verification, or pitch registration.
+- "voice": User asks for voice room or voice command playground.
+- "admin_console": User asks to go to admin console or admin dashboard.
+- "profile": User asks to view profile or account details.
+- "dashboard": User asks to return to dashboard or home.
 - "help": General assistance.
 
 OUTPUT SPECIFICATION:
 You must respond with valid JSON ONLY matching this exact structure:
 {
-  "intent": "send_money" | "cash_out" | "check_balance" | "lock_money" | "show_reminders" | "transaction_history" | "explain_transaction" | "help",
+  "intent": "send_money" | "cash_out" | "check_balance" | "lock_money" | "show_reminders" | "transaction_history" | "explain_transaction" | "strict_mode" | "voice_security" | "voice" | "admin_console" | "profile" | "dashboard" | "help",
   "confidence": number between 0.0 and 1.0,
   "requiresConfirmation": boolean,
   "entities": {
@@ -312,6 +319,79 @@ export const deterministicFallbackParser = (rawText, pageContext = 'dashboard', 
     };
   }
 
+  // 7. Navigation & Section Direct Voice Commands
+  if (text.includes('স্ট্রিক্ট') || lower.includes('strict')) {
+    return {
+      intent: 'strict_mode',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'স্ট্রিক্ট মোড সেটিংসে নিয়ে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
+  if (text.includes('বায়োমেট্রিক') || text.includes('বায়োমেট্রিক') || lower.includes('biometric')) {
+    return {
+      intent: 'voice_security',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'ভয়েস বায়োমেট্রিক ও স্পিকার সিকিউরিটি পেজে নিয়ে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
+  if (text.includes('ভয়েস রুম') || text.includes('ভয়েস রুম') || lower.includes('voice room')) {
+    return {
+      intent: 'voice',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'ভয়েস রুমে নিয়ে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
+  if (text.includes('অ্যাডমিন') || text.includes('এডমিন') || lower.includes('admin')) {
+    return {
+      intent: 'admin_console',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'অ্যাডমিন কনসোলে নিয়ে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
+  if (text.includes('প্রোফাইল') || lower.includes('profile')) {
+    return {
+      intent: 'profile',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'আপনার প্রোফাইলে নিয়ে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
+  if (text.includes('ড্যাশবোর্ড') || text.includes('হোম') || lower.includes('dashboard') || lower.includes('home')) {
+    return {
+      intent: 'dashboard',
+      confidence: 0.98,
+      requiresConfirmation: false,
+      entities: {},
+      replyTextBangla: 'ড্যাশবোর্ডে ফিরে যাওয়া হচ্ছে।',
+      pageContext,
+      engine: 'deterministic_fallback',
+    };
+  }
+
   // Default Help
   return {
     intent: 'help',
@@ -446,3 +526,40 @@ Date: ${txn.dateDisplay}
     return txn.explanationBangla;
   }
 };
+
+/**
+ * Generates an empathetic, conversational onboarding greeting using Gemini
+ */
+export const generateOnboardingGreetingWithGemini = async ({ name, step }) => {
+  if (step === 'NAME' && name) {
+    const cleanName = name.trim();
+    if (!genAI) {
+      return `হ্যালো ${cleanName}! আপনার সাথে পরিচিত হয়ে ভালো লাগলো। এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`;
+    }
+
+    try {
+      const prompt = `The user is registering on Upkotha with name: "${cleanName}". Check if the name looks valid and generate a very warm, polite, 1-sentence response in natural Bangladeshi Bengali acknowledging their name and asking for their 11-digit mobile number.
+CRITICAL MANDATORY RULE: NEVER use "নমস্কার". Always use "হ্যালো" (Hello) or "হাই" (Hi) or "স্বাগতম" (Welcome).
+Example: "হ্যালো ${cleanName}! আপনার সাথে পরিচিত হয়ে ভালো লাগলো, অনুগ্রহ করে আপনার সচল ১১ ডিজিটের মোবাইল নম্বরটি দিন।"
+Output ONLY the single Bengali sentence.`;
+
+      const response = await genAI.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: prompt,
+        config: {
+          systemInstruction: 'You are Upkotha onboarding assistant. Speak warmly, respectfully, and concisely in Bengali. NEVER say নমস্কার, use হ্যালো, হাই, or স্বাগতম.',
+        },
+      });
+
+      const rawText = typeof response?.text === 'function' ? response.text() : response?.text;
+      let reply = rawText?.trim() || `হ্যালো ${cleanName}! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`;
+      reply = reply.replace(/নমস্কার/g, 'হ্যালো');
+      return reply;
+    } catch (err) {
+      return `হ্যালো ${cleanName}! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`;
+    }
+  }
+
+  return 'হ্যালো! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।';
+};
+

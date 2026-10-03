@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Sparkles, X, ArrowRight, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
 import useVoiceAssistant from '../hooks/useVoiceAssistant';
+import { useAuth } from '../context/AuthContext';
 import { showToast } from '../utils/alert';
 import MicPermissionModal from './MicPermissionModal';
+import VoiceEnrollModal from './VoiceEnrollModal';
 
 const CONTEXTUAL_PROMPTS = {
   dashboard: [
@@ -41,6 +43,7 @@ export default function VoiceCommand({
   floating = false,
   className = '',
 }) {
+  const { user } = useAuth();
   const {
     isListening,
     isProcessing,
@@ -55,6 +58,7 @@ export default function VoiceCommand({
   const [manualText, setManualText] = useState('');
   const [biometricError, setBiometricError] = useState(null);
   const [showMicGuide, setShowMicGuide] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
   const navigate = useNavigate();
 
   const prompts = CONTEXTUAL_PROMPTS[pageContext] || CONTEXTUAL_PROMPTS.dashboard;
@@ -63,10 +67,19 @@ export default function VoiceCommand({
     setBiometricError(null);
     if (isListening) {
       stopListening();
-    } else {
-      setIsOpen(true);
-      startListening();
+      return;
     }
+
+    // Intercept un-enrolled new accounts to record and save voice pitch first
+    const isImran = user?.id === 'usr_imran_001';
+    const isEnrolled = Boolean(user?.voiceProfile?.isEnrolled && !user?.needsVoiceEnrollment);
+    if (!isImran && !isEnrolled) {
+      setShowEnrollModal(true);
+      return;
+    }
+
+    setIsOpen(true);
+    startListening();
   };
 
   const handleProcessText = async (textToProcess) => {
@@ -77,7 +90,7 @@ export default function VoiceCommand({
     stopListening();
 
     const result = await executeCommand(text, (intentRes) => {
-      // Smart Auto-Navigation based on detected intent
+      // Smart Auto-Navigation & Action Routing across all pages
       if (intentRes.intent === 'send_money') {
         navigate('/send-money', { state: { prefill: intentRes.entities, voiceBiometric: intentRes.voiceBiometric } });
       } else if (intentRes.intent === 'cash_out') {
@@ -94,10 +107,27 @@ export default function VoiceCommand({
         navigate('/transactions', { state: { query, filterType } });
       } else if (intentRes.intent === 'lock_money') {
         navigate('/lock-money', { state: { prefill: intentRes.entities } });
+      } else if (intentRes.intent === 'strict_mode') {
+        navigate('/strict-mode');
+      } else if (intentRes.intent === 'voice_security') {
+        navigate('/voice-security');
+      } else if (intentRes.intent === 'voice' || intentRes.intent === 'voice_room') {
+        navigate('/voice');
+      } else if (intentRes.intent === 'admin_console' || intentRes.intent === 'admin') {
+        navigate('/admin');
+      } else if (intentRes.intent === 'profile') {
+        navigate('/profile');
+      } else if (intentRes.intent === 'dashboard') {
+        navigate('/dashboard');
       }
 
       if (onCommandResolved) {
         onCommandResolved(intentRes);
+      }
+      
+      // Auto-close floating panel on successful resolution
+      if (floating) {
+        setTimeout(() => setIsOpen(false), 1200);
       }
     });
 
@@ -109,6 +139,18 @@ export default function VoiceCommand({
     setManualText('');
   };
 
+  // Auto-process speech command immediately when user finishes speaking
+  const prevListeningRef = React.useRef(isListening);
+  React.useEffect(() => {
+    if (prevListeningRef.current && !isListening && transcript && transcript.trim().length > 1 && !isProcessing) {
+      const timer = setTimeout(() => {
+        handleProcessText(transcript);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+    prevListeningRef.current = isListening;
+  }, [isListening, transcript, isProcessing]);
+
   // If floating button on bottom-right
   if (floating) {
     return (
@@ -117,6 +159,12 @@ export default function VoiceCommand({
         <button
           type="button"
           onClick={() => {
+            const isImran = user?.id === 'usr_imran_001';
+            const isEnrolled = Boolean(user?.voiceProfile?.isEnrolled && !user?.needsVoiceEnrollment);
+            if (!isImran && !isEnrolled) {
+              setShowEnrollModal(true);
+              return;
+            }
             setIsOpen(!isOpen);
             if (!isOpen) startListening();
             else stopListening();
@@ -272,6 +320,15 @@ export default function VoiceCommand({
           isOpen={showMicGuide}
           onClose={() => setShowMicGuide(false)}
         />
+
+        <VoiceEnrollModal
+          isOpen={showEnrollModal}
+          onClose={() => setShowEnrollModal(false)}
+          onEnrolled={() => {
+            setIsOpen(true);
+            startListening();
+          }}
+        />
       </div>
     );
   }
@@ -381,12 +438,23 @@ export default function VoiceCommand({
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           ভয়েস বায়োমেট্রিক স্পিকার ভেরিফিকেশন সক্রিয়
         </span>
-        <span className="font-semibold text-slate-700">ইমরান হোসেন (৯৫% মিল)</span>
+        <span className="font-semibold text-slate-700">
+          {user?.name || 'অ্যাকাউন্ট মালিক'} (৯৫% মিল)
+        </span>
       </div>
 
       <MicPermissionModal
         isOpen={showMicGuide}
         onClose={() => setShowMicGuide(false)}
+      />
+
+      <VoiceEnrollModal
+        isOpen={showEnrollModal}
+        onClose={() => setShowEnrollModal(false)}
+        onEnrolled={() => {
+          setIsOpen(true);
+          startListening();
+        }}
       />
     </div>
   );

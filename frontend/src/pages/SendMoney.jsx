@@ -146,6 +146,26 @@ export default function SendMoney() {
       setIsModalOpen(false);
       setReceipt(receiptData);
 
+      if (user?.id) {
+        const storedKey = `upkotha_transactions_${user.id}`;
+        const existing = JSON.parse(localStorage.getItem(storedKey) || '[]');
+        const newTxn = {
+          id: receiptData.transactionId,
+          type: 'send_money',
+          title: `${targetRecipient} (Send Money)`,
+          recipient: targetRecipient,
+          recipientPhone: stagedData?.recipientPhone || '',
+          amount: actualAmount,
+          fee: 0,
+          dateDisplay: 'আজ, এইমাত্র',
+          category: 'ব্যক্তিগত',
+          categoryKey: 'personal',
+          status: 'SUCCESS',
+          explanationBangla: receiptData.explanationBangla
+        };
+        localStorage.setItem(storedKey, JSON.stringify([newTxn, ...existing]));
+      }
+
       if (receiptData?.newAvailableBalance !== undefined) {
         updateBalance(receiptData.newAvailableBalance, receiptData.lockedBalance);
       }

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Phone, Lock, Volume2, ArrowRight } from 'lucide-react';
+import { User, Phone, Lock, Volume2, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useVoice } from '../context/VoiceContext';
 import Button from '../components/Button';
 import VoiceGuide from '../components/VoiceGuide';
-import { showToast } from '../utils/alert';
+import { showToast, showAlert } from '../utils/alert';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -13,35 +14,128 @@ export default function Register() {
   const [confirmPin, setConfirmPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Dynamic step-by-step onboarding voice guide state
+  const [guideMessage, setGuideMessage] = useState(
+    'স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে অ্যাকাউন্ট তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।'
+  );
+  const [activeStep, setActiveStep] = useState('NAME'); // 'NAME' | 'PHONE' | 'PIN' | 'READY'
+
   const { register } = useAuth();
+  const { speak } = useVoice();
   const navigate = useNavigate();
 
+  // Track if steps have already triggered audio guidance to prevent repetitive loops
+  const nameSpokenRef = useRef(false);
+  const phoneSpokenRef = useRef(false);
+  const pinSpokenRef = useRef(false);
+
+  // 1. Initial Greeting when user lands on registration page
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      speak('স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে অ্যাকাউন্ট তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।');
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 2. Validate name and speak next instruction (Gemini-backed with fallback)
+  const validateNameAndProceed = async (nameVal) => {
+    const trimmed = (nameVal || name).trim();
+    if (trimmed.length < 2 || nameSpokenRef.current) return;
+
+    nameSpokenRef.current = true;
+    setActiveStep('PHONE');
+
+    try {
+      const res = await fetch('http://localhost:5000/api/voice/onboard-greeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, step: 'NAME' }),
+      });
+      const data = await res.json();
+      const prompt = (data.spokenText || `হ্যালো, ${trimmed}! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`).replace(/নমস্কার/g, 'হ্যালো');
+      setGuideMessage(prompt);
+      speak(prompt);
+    } catch {
+      const fallbackPrompt = `হ্যালো, ${trimmed}! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`;
+      setGuideMessage(fallbackPrompt);
+      speak(fallbackPrompt);
+    }
+  };
+
+  // 3. Handle phone input completion (11 digits)
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    setPhone(val);
+
+    const clean = val.replace(/\D/g, '');
+    if (clean.length === 11 && !phoneSpokenRef.current) {
+      phoneSpokenRef.current = true;
+      setActiveStep('PIN');
+      const pinPrompt =
+        'মোবাইল নম্বর পেয়েছি। এবার ৪ ডিজিটের একটি গোপন পিন দিন এবং নিশ্চিত করুন। মনে রাখবেন, এমন পিন দিন যা আপনি মনে রাখতে পারবেন এবং কারো সাথে শেয়ার করবেন না।';
+      setGuideMessage(pinPrompt);
+      speak(pinPrompt);
+    }
+  };
+
+  // 4. Handle PIN confirmation
+  const handleConfirmPinChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '');
+    setConfirmPin(val);
+
+    if (pin.length === 4 && val.length === 4 && pin === val && !pinSpokenRef.current) {
+      pinSpokenRef.current = true;
+      setActiveStep('READY');
+      const readyPrompt = 'পিন নিশ্চিত হয়েছে! এবার নিচে "অ্যাকাউন্ট তৈরি করুন" বোতামে চাপ দিন।';
+      setGuideMessage(readyPrompt);
+      speak(readyPrompt);
+    }
+  };
+
+  // 5. Final Form Submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!name.trim()) {
       showToast.error('অনুগ্রহ করে আপনার পুরো নাম লিখুন');
+      speak('অনুগ্রহ করে আপনার পুরো নাম লিখুন।');
       return;
     }
-    if (!phone || phone.length < 11) {
+    if (!phone || phone.replace(/\D/g, '').length < 11) {
       showToast.error('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন');
+      speak('সঠিক ১১ ডিজিটের মোবাইল নম্বর প্রদান করুন।');
       return;
     }
     if (!pin || pin.length !== 4) {
       showToast.error('৪ ডিজিটের গোপন পিন কোড সেট করুন');
+      speak('৪ ডিজিটের গোপন পিন কোড সেট করুন।');
       return;
     }
     if (pin !== confirmPin) {
       showToast.error('দুইবারের পিন কোড মেলেনি');
+      speak('দুইবারের পিন কোড মেলেনি। পুনরায় যাচাই করুন।');
       return;
     }
 
     try {
       setIsLoading(true);
-      await register(name, phone, pin);
-      navigate('/dashboard');
+      await register(name.trim(), phone, pin);
+
+      // Spoken congratulatory celebration requested by user
+      const successGreeting = `অভিনন্দন ${name.trim()}! আপনার উপকথা অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। স্বাগতম!`;
+      speak(successGreeting);
+
+      showAlert({
+        title: 'অ্যাকাউন্ট তৈরি সফল!',
+        text: `${name.trim()}, আপনার উপকথা এমএফএস অ্যাকাউন্ট সফলভাবে সক্রিয় করা হয়েছে।`,
+        icon: 'success',
+      });
+
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
     } catch (err) {
-      // Toast shown in AuthContext
+      showToast.error('অ্যাকাউন্ট তৈরিতে সমস্যা হয়েছে');
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +146,7 @@ export default function Register() {
       {/* Brand Header */}
       <div className="max-w-md w-full mx-auto pt-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-            উপ
-          </div>
+          <img src="/logo.png" alt="UPKOTHA" className="w-10 h-10 object-contain drop-shadow-sm" />
           <div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">UPKOTHA</span>
             <span className="block text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">
@@ -70,10 +162,10 @@ export default function Register() {
 
       {/* Main Register Card */}
       <div className="max-w-md w-full mx-auto my-auto bg-white rounded-2xl border border-slate-200 shadow-md p-6 sm:p-8">
-        {/* Contextual Voice Guide */}
+        {/* Interactive Step-by-Step Contextual Voice Guide */}
         <VoiceGuide
           pageContext="register"
-          message="স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে account তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।"
+          message={guideMessage}
           className="mb-6"
         />
 
@@ -85,38 +177,62 @@ export default function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Step 1: Name */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              আপনার পুরো নাম
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                আপনার পুরো নাম
+              </label>
+              {name.trim().length >= 2 && (
+                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> নাম গৃহীত
+                </span>
+              )}
+            </div>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onBlur={() => validateNameAndProceed()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    validateNameAndProceed();
+                  }
+                }}
                 placeholder="যেমন: ইমরান আহমেদ"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
               />
             </div>
           </div>
 
+          {/* Step 2: Mobile Number */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              মোবাইল নম্বর
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                মোবাইল নম্বর (১১ ডিজিট)
+              </label>
+              {phone.replace(/\D/g, '').length === 11 && (
+                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> নম্বর সঠিক
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 placeholder="01712345678"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
               />
             </div>
           </div>
 
+          {/* Step 3: PIN & Confirm PIN */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -145,7 +261,7 @@ export default function Register() {
                   type="password"
                   maxLength={4}
                   value={confirmPin}
-                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                  onChange={handleConfirmPinChange}
                   placeholder="••••"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                 />
@@ -153,8 +269,13 @@ export default function Register() {
             </div>
           </div>
 
+          {/* PIN Security Tip requested by user */}
+          <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 leading-snug">
+            💡 <strong>টিপস:</strong> এমন ৪ সংখ্যার পিন দিন যা আপনি সহজে মনে রাখতে পারবেন, তবে অন্য কেউ অনুমান করতে পারবে না (যেমন জন্মসাল বা ১২৩৪ এড়িয়ে চলুন)।
+          </div>
+
           {/* Prototype sandbox allocation notice */}
-          <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 leading-snug">
+          <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 leading-snug">
             ✨ ডেমো প্রোটোটাইপে নিবন্ধনের সাথে সাথে ৳১৫,০০০ প্রোটোটাইপ ব্যালেন্স দেওয়া হবে যাতে আপনি সব ফিচার টেস্ট করতে পারেন।
           </div>
 

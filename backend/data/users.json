@@ -1,11 +1,78 @@
 [
   {
+    "id": "usr_1791045823176",
+    "name": "test",
+    "phone": "00000000000",
+    "pin": "1111",
+    "availableBalance": 15000,
+    "lockedBalance": 0,
+    "totalBalance": 15000,
+    "currency": "BDT",
+    "isStrictMode": false,
+    "accountType": "Personal",
+    "kycVerified": true,
+    "registeredAt": "2026-10-03T16:43:43.176Z",
+    "isNewAccount": true,
+    "voiceProfile": {
+      "isEnrolled": true,
+      "voiceprintId": "vp_usr_1791045823176",
+      "primarySpeaker": "test",
+      "fundamentalFrequencyHz": 165,
+      "pitchRangeHz": [
+        140,
+        200
+      ],
+      "spectralCentroidHz": 1800,
+      "speakingRateWpm": 130,
+      "sampleCount": 2,
+      "securityThreshold": 0.85,
+      "antiSpoofEnabled": true,
+      "enrolledDate": "2026-10-03T16:46:24.517Z",
+      "lastCalibratedAt": "2026-10-03T16:46:24.517Z",
+      "lastVerifiedAt": "2026-10-03T16:45:41.290Z"
+    },
+    "needsVoiceEnrollment": false
+  },
+  {
+    "id": "usr_1791041933952",
+    "name": "mr y",
+    "phone": "77777777777",
+    "pin": "0000",
+    "availableBalance": 14500,
+    "lockedBalance": 0,
+    "totalBalance": 14500,
+    "currency": "BDT",
+    "isStrictMode": false,
+    "accountType": "Personal",
+    "kycVerified": true,
+    "registeredAt": "2026-10-03T15:38:53.952Z",
+    "isNewAccount": true,
+    "voiceProfile": {
+      "isEnrolled": true,
+      "voiceprintId": "vp_usr_1791041933952",
+      "primarySpeaker": "mr y",
+      "fundamentalFrequencyHz": 128,
+      "pitchRangeHz": [
+        103,
+        153
+      ],
+      "spectralCentroidHz": 1800,
+      "speakingRateWpm": 130,
+      "sampleCount": 13,
+      "securityThreshold": 0.85,
+      "antiSpoofEnabled": true,
+      "lastVerifiedAt": "2026-10-03T15:47:56.122Z",
+      "enrolledDate": "2026-10-03T15:45:14.862Z",
+      "lastCalibratedAt": "2026-10-03T15:45:14.862Z"
+    }
+  },
+  {
     "id": "usr_imran_001",
     "name": "ইমরান",
     "phone": "01712-345678",
     "pin": "1234",
-    "availableBalance": 13500,
-    "lockedBalance": 5000,
+    "availableBalance": 13400,
+    "lockedBalance": 5100,
     "totalBalance": 18500,
     "currency": "BDT",
     "isStrictMode": false,
@@ -27,7 +94,7 @@
       "sampleCount": 7,
       "securityThreshold": 0.85,
       "antiSpoofEnabled": true,
-      "lastVerifiedAt": "2026-10-03T11:08:49.717Z",
+      "lastVerifiedAt": "2026-10-03T15:36:22.160Z",
       "lastCalibratedAt": "2026-10-03T10:52:16.910Z"
     }
   }

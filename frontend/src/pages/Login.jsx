@@ -7,8 +7,41 @@ import VoiceGuide from '../components/VoiceGuide';
 import { showToast, showAlert } from '../utils/alert';
 
 export default function Login() {
-  const [phone, setPhone] = useState('01712-345678');
-  const [pin, setPin] = useState('1234');
+  const recentRegistered = React.useMemo(() => {
+    try {
+      const saved = localStorage.getItem('upkotha_last_registered_account');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [phone, setPhone] = useState(() => {
+    try {
+      const savedAcc = localStorage.getItem('upkotha_last_registered_account');
+      if (savedAcc) {
+        const parsed = JSON.parse(savedAcc);
+        if (parsed.phone) return parsed.phone;
+      }
+      return localStorage.getItem('upkotha_last_logged_phone') || '01712-345678';
+    } catch {
+      return '01712-345678';
+    }
+  });
+
+  const [pin, setPin] = useState(() => {
+    try {
+      const savedAcc = localStorage.getItem('upkotha_last_registered_account');
+      if (savedAcc) {
+        const parsed = JSON.parse(savedAcc);
+        if (parsed.pin) return parsed.pin;
+      }
+      return '1234';
+    } catch {
+      return '1234';
+    }
+  });
+
   const [isLoading, setIsLoading] = useState(false);
 
   const { login } = useAuth();
@@ -24,7 +57,7 @@ export default function Login() {
       return;
     }
     if (!pin || pin.length !== 4) {
-      showToast.error('৪ ডিজিটের পিন কোড দিন (ডেমো: 1234)');
+      showToast.error('৪ ডিজিটের পিন কোড দিন');
       return;
     }
 
@@ -45,14 +78,19 @@ export default function Login() {
     showToast.info('ইমরানের ডেমো ক্রেডেনশিয়াল পূরণ করা হয়েছে');
   };
 
+  const fillRegisteredCredentials = (account) => {
+    if (!account) return;
+    setPhone(account.phone || '');
+    setPin(account.pin || '');
+    showToast.info(`${account.name}-এর অ্যাকাউন্ট তথ্য পূরণ করা হয়েছে`);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-4 sm:p-6">
       {/* Brand Header */}
       <div className="max-w-md w-full mx-auto pt-6 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-            উপ
-          </div>
+          <img src="/logo.png" alt="UPKOTHA" className="w-10 h-10 object-contain drop-shadow-sm" />
           <div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">UPKOTHA</span>
             <span className="block text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">
@@ -71,7 +109,7 @@ export default function Login() {
         {/* Contextual Voice Guide */}
         <VoiceGuide
           pageContext="login"
-          message="আপনার মোবাইল নম্বর দিন। এরপর PIN ব্যবহার করে login করুন।"
+          message="আপনার মোবাইল নম্বর দিন। এরপর ৪ ডিজিটের গোপন পিন কোড দিয়ে অ্যাকাউন্টে প্রবেশ বা লগ ইন করুন।"
           className="mb-6"
         />
 
@@ -82,19 +120,42 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Demo Auto-fill Quick Action */}
-        <div className="mb-6 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-          <div>
-            <span className="font-semibold text-slate-800 block">ডেমো অ্যাকাউন্ট (ইমরান)</span>
-            <span className="text-[11px] text-slate-500">ব্যালেন্স: ৳১৩,৫০০ • পিন: 1234</span>
+        {/* Multi-Account Fast Fill Cards */}
+        <div className="space-y-2 mb-6">
+          {recentRegistered && recentRegistered.phone !== '01712-345678' && (
+            <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between text-xs">
+              <div>
+                <span className="font-semibold text-emerald-900 block flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  আপনার নতুন অ্যাকাউন্ট ({recentRegistered.name})
+                </span>
+                <span className="text-[11px] text-emerald-700 font-mono">
+                  {recentRegistered.phone} • পিন: {recentRegistered.pin || '••••'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => fillRegisteredCredentials(recentRegistered)}
+                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-medium transition shadow-2xs"
+              >
+                লগইন প্রস্তুত
+              </button>
+            </div>
+          )}
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+            <div>
+              <span className="font-semibold text-slate-800 block">ডেমো অ্যাকাউন্ট (ইমরান)</span>
+              <span className="text-[11px] text-slate-500 font-mono">01712-345678 • পিন: 1234</span>
+            </div>
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="px-2.5 py-1.5 rounded-lg bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 font-medium transition"
+            >
+              ইমরান মোড
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={fillDemoCredentials}
-            className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-medium transition"
-          >
-            অটো পূরণ
-          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

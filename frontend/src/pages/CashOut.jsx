@@ -145,6 +145,26 @@ export default function CashOut() {
       setIsModalOpen(false);
       setReceipt(receiptData);
 
+      if (user?.id) {
+        const storedKey = `upkotha_transactions_${user.id}`;
+        const existing = JSON.parse(localStorage.getItem(storedKey) || '[]');
+        const newTxn = {
+          id: receiptData.transactionId,
+          type: 'cash_out',
+          title: `${agentName} (Cash Out)`,
+          recipient: agentName,
+          recipientPhone: stagedData?.recipientPhone || '',
+          amount: actualAmount,
+          fee: actualFee,
+          dateDisplay: 'আজ, এইমাত্র',
+          category: 'ক্যাশ আউট',
+          categoryKey: 'cash_out',
+          status: 'SUCCESS',
+          explanationBangla: receiptData.explanationBangla
+        };
+        localStorage.setItem(storedKey, JSON.stringify([newTxn, ...existing]));
+      }
+
       if (receiptData?.newAvailableBalance !== undefined) {
         updateBalance(receiptData.newAvailableBalance, receiptData.lockedBalance);
       }

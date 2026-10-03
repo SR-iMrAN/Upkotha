@@ -1,4 +1,5 @@
 import db from '../dataStore.js';
+import { generateOnboardingGreetingWithGemini } from '../services/geminiService.js';
 
 /**
  * Voice Biometrics & Speaker Verification Controller
@@ -101,9 +102,11 @@ export const verifySpeaker = (req, res, next) => {
       const deltaPitch = Math.abs(inputPitch - baselineF0);
       const isWithinPitchRange = inputPitch >= minF0 && inputPitch <= maxF0;
 
-      if (!isWithinPitchRange || deltaPitch > 25) {
-        // Voice pitch diverges from Imran's enrolled biometric baseline!
-        const score = Math.max(28, Math.min(65, Math.round(88 - deltaPitch * 0.95)));
+      if (!isWithinPitchRange) {
+        // Voice pitch diverges outside enrolled biometric range!
+        const distOutside = inputPitch < minF0 ? (minF0 - inputPitch) : (inputPitch - maxF0);
+        const score = Math.max(25, Math.min(68, Math.round(82 - distOutside * 1.2)));
+        const ownerName = profile.primarySpeaker || user?.name || 'অ্যাকাউন্ট মালিক';
         result = {
           isVerified: false,
           similarityScore: score,
@@ -111,33 +114,37 @@ export const verifySpeaker = (req, res, next) => {
           antiSpoofStatus: 'SPEAKER_MISMATCH',
           confidenceLevel: 'LOW',
           speaker: `অপরিচিত ব্যক্তি (${Math.round(inputPitch)} Hz)`,
-          pitchDeviationHz: Number(deltaPitch.toFixed(1)),
+          pitchDeviationHz: Number(distOutside.toFixed(1)),
           measuredPitchHz: Math.round(inputPitch),
           baselinePitchHz: Math.round(baselineF0),
+          pitchRange: [minF0, maxF0],
           formantCoherence: 0.52,
-          messageBangla: `কণ্ঠস্বর অমিল: আপনার কণ্ঠের পিচ (${Math.round(inputPitch)} Hz) নিবন্ধিত মালিক ইমরান হোসেনের ভয়েসপ্রিন্টের (${Math.round(baselineF0)} Hz) সাথে মেলেনি। মিল মাত্র ${score}%।`,
+          messageBangla: `কণ্ঠস্বর অমিল: আপনার কণ্ঠের পিচ (${Math.round(inputPitch)} Hz) নিবন্ধিত মালিক ${ownerName}-এর অনুমোদিত ব্যাপ্তীর (${minF0} - ${maxF0} Hz) সাথে মেলেনি। মিল মাত্র ${score}%।`,
           recommendation: 'শুধুমাত্র অ্যাকাউন্ট মালিকের কণ্ঠস্বর দিয়ে ভয়েস নির্দেশনা প্রদান করা সম্ভব।',
         };
       } else {
-        // Pitch matches Imran's biological voice profile!
-        const score = Math.min(98, Math.max(88, Math.round(97 - deltaPitch * 0.35)));
+        // Pitch falls within the user's authorized biological voice range!
+        const score = Math.min(99, Math.max(88, Math.round(97 - deltaPitch * 0.2)));
+        const ownerName = profile.primarySpeaker || user?.name || 'অ্যাকাউন্ট মালিক';
         result = {
           isVerified: true,
           similarityScore: score,
           livenessScore: 97.4,
           antiSpoofStatus: 'PASS',
           confidenceLevel: 'HIGH',
-          speaker: profile.primarySpeaker || 'ইমরান হোসেন',
+          speaker: ownerName,
           pitchDeviationHz: Number(deltaPitch.toFixed(1)),
           measuredPitchHz: Math.round(inputPitch),
           baselinePitchHz: Math.round(baselineF0),
+          pitchRange: [minF0, maxF0],
           formantCoherence: 0.94,
-          messageBangla: `কণ্ঠস্বর সফলভাবে যাচাই করা হয়েছে। ${profile.primarySpeaker}-এর বায়োমেট্রিকের সাথে ${score}% মিল পাওয়া গেছে (পিচ: ${Math.round(inputPitch)} Hz)।`,
+          messageBangla: `কণ্ঠস্বর সফলভাবে যাচাই করা হয়েছে। ${ownerName}-এর বায়োমেট্রিকের সাথে ${score}% মিল পাওয়া গেছে (পিচ: ${Math.round(inputPitch)} Hz)।`,
           recommendation: 'ভয়েস নির্দেশ নিরাপদ। ৪-সংখ্যার গোপন পিন নিশ্চিতকরণে এগিয়ে যান।',
         };
       }
     } else if (simulatedSpeaker === 'imposter' || simulatedSpeaker === 'stranger') {
       // 2. Imposter / Third-party Speaker (Different human voice)
+      const ownerName = profile.primarySpeaker || user?.name || 'অ্যাকাউন্ট মালিক';
       result = {
         isVerified: false,
         similarityScore: 39.8,
@@ -147,7 +154,7 @@ export const verifySpeaker = (req, res, next) => {
         speaker: 'অপরিচিত ব্যক্তি',
         pitchDeviationHz: 34.6, // Large frequency discrepancy
         formantCoherence: 0.58,
-        messageBangla: 'কণ্ঠস্বর অমিল: বর্তমান বক্তার স্বর ইমরান হোসেনের নিবন্ধিত ভয়েসপ্রিন্টের সাথে মেলেনি (মিল মাত্র ৪০%)।',
+        messageBangla: `কণ্ঠস্বর অমিল: বর্তমান বক্তার স্বর ${ownerName}-এর নিবন্ধিত ভয়েসপ্রিন্টের সাথে মেলেনি (মিল মাত্র ৪০%)।`,
         recommendation: 'শুধুমাত্র অ্যাকাউন্ট মালিকের কণ্ঠস্বর দিয়ে ভয়েস নির্দেশনা প্রদান করা সম্ভব।',
       };
     } else {
@@ -217,26 +224,33 @@ export const verifySpeaker = (req, res, next) => {
 export const enrollVoice = (req, res, next) => {
   try {
     const userId = req.user?.id || 'usr_imran_001';
-    const { phrase = 'আমার ব্যালেন্স কত', pitchHz = 128.4 } = req.body;
+    const { phrase = 'আমার ব্যালেন্স কত', pitchHz = 145, minHz, maxHz } = req.body || {};
     const user = db.getUser(userId);
 
     const currentProfile = user?.voiceProfile || DEFAULT_PROFILE;
     const newSampleCount = (currentProfile.sampleCount || 0) + 1;
+    const numPitch = Math.round(Number(pitchHz));
+
+    // Wider forgiving range (e.g. 120 - 180 Hz or user custom bounds)
+    const finalMin = minHz !== undefined ? Math.round(Number(minHz)) : Math.max(80, numPitch - 30);
+    const finalMax = maxHz !== undefined ? Math.round(Number(maxHz)) : (numPitch + 35);
 
     const updatedProfile = {
       ...currentProfile,
       isEnrolled: true,
       enrolledDate: new Date().toISOString(),
+      primarySpeaker: user?.name || currentProfile.primarySpeaker || 'অ্যাকাউন্ট মালিক',
       sampleCount: newSampleCount,
-      fundamentalFrequencyHz: Number(pitchHz),
+      fundamentalFrequencyHz: numPitch,
+      pitchRangeHz: [finalMin, finalMax],
       lastCalibratedAt: new Date().toISOString(),
     };
 
-    db.update('users', userId, { voiceProfile: updatedProfile });
+    db.update('users', userId, { voiceProfile: updatedProfile, needsVoiceEnrollment: false });
 
     res.json({
       success: true,
-      message: 'ভয়েস বায়োমেট্রিক মডেল সফলভাবে রিক্যালিব্রেট করা হয়েছে।',
+      message: 'ভয়েস বায়োমেট্রিক মডেল সফলভাবে সংরক্ষণ করা হয়েছে।',
       profile: updatedProfile,
     });
   } catch (err) {
@@ -263,3 +277,31 @@ export const getVoiceLogs = (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Interactive step-by-step onboarding voice guide
+ */
+export const handleOnboardGreeting = async (req, res, next) => {
+  try {
+    const { name, phone, step } = req.body;
+    let spokenText = '';
+
+    if (step === 'NAME' && name) {
+      spokenText = await generateOnboardingGreetingWithGemini({ name, step });
+    } else if (step === 'PHONE') {
+      spokenText = 'মোবাইল নম্বর পেয়েছি। এবার ৪ ডিজিটের একটি গোপন পিন দিন এবং নিশ্চিত করুন। মনে রাখবেন, এমন পিন দিন যা আপনি মনে রাখতে পারবেন এবং কারো সাথে শেয়ার করবেন না।';
+    } else if (step === 'SUCCESS') {
+      spokenText = `অভিনন্দন ${name || ''}! আপনার উপকথা অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। স্বাগতম!`;
+    } else {
+      spokenText = 'স্বাগতম। আমি উপকথা। আপনাকে ধাপে ধাপে অ্যাকাউন্ট তৈরি করতে সাহায্য করব। প্রথমে আপনার নাম দিন।';
+    }
+
+    res.json({
+      success: true,
+      spokenText,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+

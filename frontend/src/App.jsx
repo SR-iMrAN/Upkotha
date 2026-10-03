@@ -1,8 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { VoiceProvider } from './context/VoiceContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -28,9 +29,7 @@ function Home() {
       {/* Header */}
       <header className="navbar bg-white border-b border-slate-200 px-6 sticky top-0 z-50 shadow-xs">
         <div className="flex-1 items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold text-xl shadow-md">
-            উপ
-          </div>
+          <img src="/logo.png" alt="UPKOTHA" className="w-10 h-10 object-contain drop-shadow-sm" />
           <div>
             <span className="text-xl font-bold text-slate-800 tracking-tight">UPKOTHA</span>
             <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -40,7 +39,7 @@ function Home() {
         </div>
 
         <div className="flex-none gap-2 sm:gap-3">
-          <Link to="/design-system">
+          <Link to="/design-system" className="hidden md:inline-flex">
             <Button variant="outline" size="sm">
               ডিজাইন সিস্টেম
             </Button>
@@ -144,9 +143,10 @@ function Home() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <VoiceProvider>
-        <Router>
+    <LanguageProvider>
+      <AuthProvider>
+        <VoiceProvider>
+          <Router>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -243,9 +243,15 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Fallbacks & Redirects */}
+            <Route path="/judge-demo" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/demo" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
       </VoiceProvider>
     </AuthProvider>
+  </LanguageProvider>
   );
 }

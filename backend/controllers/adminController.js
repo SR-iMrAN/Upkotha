@@ -141,3 +141,48 @@ export const getVoiceAuditStream = (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Reset demo user balances, locks, and strict mode to clean hackathon benchmark state
+ */
+export const resetDemoState = (req, res, next) => {
+  try {
+    const userId = req.user?.id || 'usr_imran_001';
+
+    // Reset balances
+    db.updateUserBalances(userId, {
+      availableBalance: 13500,
+      lockedBalance: 5000,
+    });
+
+    // Reset strict mode
+    db.update('users', userId, { isStrictMode: false });
+
+    // Ensure baseline lock exists
+    const locks = db.getAll('locks').filter(l => l.userId === userId && l.status === 'LOCKED');
+    if (locks.length === 0) {
+      db.insert('locks', {
+        id: `lock_demo_${Date.now()}`,
+        userId,
+        amount: 5000,
+        purpose: 'মেয়ের স্কুলের বেতন',
+        unlockDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'LOCKED',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'ডেমো ওয়ালেট ও ব্যালেন্স সফলভাবে প্রাথমিক অবস্থায় রিসেট করা হয়েছে।',
+      wallet: {
+        availableBalance: 13500,
+        lockedBalance: 5000,
+        totalBalance: 18500,
+        isStrictMode: false,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};

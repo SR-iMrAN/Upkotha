@@ -15,25 +15,27 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const NAV_ITEMS = [
-  { name: 'ড্যাশবোর্ড', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'সেন্ড মানি', path: '/send-money', icon: Send },
-  { name: 'ক্যাশ আউট', path: '/cash-out', icon: ArrowDownToLine },
-  { name: 'মানি লক', path: '/lock-money', icon: Lock },
-  { name: 'লেনদেন ইতিহাস', path: '/transactions', icon: History },
-  { name: 'বিল ও রিমাইন্ডার', path: '/reminders', icon: BellRing },
-  { name: 'স্ট্রিক্ট মোড', path: '/strict-mode', icon: ShieldCheck },
-  { name: 'ভয়েস বায়োমেট্রিক', path: '/voice-security', icon: Radio },
-  { name: 'ভয়েস রুম', path: '/voice', icon: Mic },
-  { name: 'অ্যাডমিন কনসোল', path: '/admin', icon: BarChart3 },
-  { name: 'প্রোফাইল', path: '/profile', icon: UserCheck },
+  { name: 'ড্যাশবোর্ড', nameEn: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'সেন্ড মানি', nameEn: 'Send Money', path: '/send-money', icon: Send },
+  { name: 'ক্যাশ আউট', nameEn: 'Cash Out', path: '/cash-out', icon: ArrowDownToLine },
+  { name: 'মানি লক', nameEn: 'Lock Money', path: '/lock-money', icon: Lock },
+  { name: 'লেনদেন ইতিহাস', nameEn: 'Transactions', path: '/transactions', icon: History },
+  { name: 'বিল ও রিমাইন্ডার', nameEn: 'Bills & Reminders', path: '/reminders', icon: BellRing },
+  { name: 'স্ট্রিক্ট মোড', nameEn: 'Strict Mode', path: '/strict-mode', icon: ShieldCheck },
+  { name: 'ভয়েস বায়োমেট্রিক', nameEn: 'Voice Biometrics', path: '/voice-security', icon: Radio },
+  { name: 'ভয়েস রুম', nameEn: 'Voice Room', path: '/voice', icon: Mic },
+  { name: 'অ্যাডমিন কনসোল', nameEn: 'Admin Console', path: '/admin', icon: BarChart3 },
+  { name: 'প্রোফাইল', nameEn: 'Profile', path: '/profile', icon: UserCheck },
 ];
 
 /**
  * Sidebar: Persistent desktop navigation + responsive mobile drawer
  */
 export default function Sidebar({ isOpen, onClose }) {
+  const { isEnglish, t } = useLanguage();
   return (
     <>
       {/* Mobile Backdrop */}
@@ -56,12 +58,12 @@ export default function Sidebar({ isOpen, onClose }) {
         <div>
           <div className="h-16 px-5 border-b border-slate-800 flex items-center justify-between">
             <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                উপ
-              </div>
+              <img src="/logo.png" alt="UPKOTHA" className="w-9 h-9 object-contain drop-shadow-sm" />
               <div>
                 <span className="text-base font-bold text-white tracking-tight">UPKOTHA</span>
-                <span className="block text-[10px] text-emerald-400 font-medium">উপকথা AI লেয়ার</span>
+                <span className="block text-[10px] text-emerald-400 font-medium">
+                  {isEnglish ? 'AI Financial Layer' : 'উপকথা AI লেয়ার'}
+                </span>
               </div>
             </Link>
 
@@ -92,7 +94,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   }
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  <span>{item.name}</span>
+                  <span>{isEnglish ? item.nameEn : item.name}</span>
                 </NavLink>
               );
             })}
@@ -104,10 +106,12 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs">
             <div className="flex items-center gap-1.5 text-emerald-400 font-semibold mb-1">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>সহজ ও বুদ্ধিমান</span>
+              <span>{isEnglish ? 'Smart & Simple' : 'সহজ ও বুদ্ধিমান'}</span>
             </div>
             <p className="text-[11px] text-slate-400 leading-snug">
-              ভয়েস ও এআই সহযোগিতায় আপনার আর্থিক লেনদেন আরও সুরক্ষিত।
+              {isEnglish
+                ? 'AI-guided voice assistance for secure digital finance.'
+                : 'ভয়েস ও এআই সহযোগিতায় আপনার আর্থিক লেনদেন আরও সুরক্ষিত।'}
             </p>
           </div>
         </div>

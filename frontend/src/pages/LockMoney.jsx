@@ -64,7 +64,7 @@ export default function LockMoney() {
 
   useEffect(() => {
     loadLocks();
-  }, []);
+  }, [user]);
 
   // Handle voice command prefill
   useEffect(() => {

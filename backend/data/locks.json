@@ -1,5 +1,18 @@
 [
   {
+    "id": "lock_180555",
+    "userId": "usr_imran_001",
+    "purpose": "শিক্ষা ফি",
+    "purposeKey": "custom",
+    "amount": 100,
+    "currency": "BDT",
+    "status": "LOCKED",
+    "lockedOn": "2026-10-03T13:13:00.555Z",
+    "lockedOnDisplay": "আজ, এইমাত্র",
+    "reason": "শিক্ষা ফি বাবদ টাকা সুরক্ষিত রাখা",
+    "icon": "⚡"
+  },
+  {
     "id": "lock_test_1790976706661",
     "userId": "usr_imran_001",
     "purpose": "শিক্ষা ফি",

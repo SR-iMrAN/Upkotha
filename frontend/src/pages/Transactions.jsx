@@ -39,7 +39,11 @@ export default function Transactions() {
   const { speak, stopSpeaking, isSpeaking } = useVoice();
   const location = useLocation();
 
-  const [transactions, setTransactions] = useState(SYNTHETIC_TRANSACTIONS);
+  const [transactions, setTransactions] = useState(() => {
+    if (!user || user.id === 'usr_imran_001') return SYNTHETIC_TRANSACTIONS;
+    const stored = localStorage.getItem(`upkotha_transactions_${user.id}`);
+    return stored ? JSON.parse(stored) : [];
+  });
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeVoiceFilter, setActiveVoiceFilter] = useState(null);
@@ -50,9 +54,15 @@ export default function Transactions() {
   const [explanationText, setExplanationText] = useState('');
   const [isExplaining, setIsExplaining] = useState(false);
 
-  // Fetch Live Transactions from Backend
+  // Fetch Live Transactions
   useEffect(() => {
     async function fetchLiveTxns() {
+      if (!user) return;
+      if (user.id !== 'usr_imran_001') {
+        const stored = localStorage.getItem(`upkotha_transactions_${user.id}`);
+        setTransactions(stored ? JSON.parse(stored) : []);
+        return;
+      }
       try {
         setIsLoading(true);
         const res = await api.getTransactions();
@@ -66,7 +76,7 @@ export default function Transactions() {
       }
     }
     fetchLiveTxns();
-  }, []);
+  }, [user]);
 
   // Handle incoming voice command filter/query
   useEffect(() => {

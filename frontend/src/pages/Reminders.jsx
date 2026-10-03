@@ -30,7 +30,11 @@ export default function Reminders() {
   const { user, toggleStrictMode, updateBalance } = useAuth();
   const { speak, stopSpeaking, isSpeaking } = useVoice();
 
-  const [reminders, setReminders] = useState(SYNTHETIC_REMINDERS);
+  const [reminders, setReminders] = useState(() => {
+    if (!user || user.id === 'usr_imran_001') return SYNTHETIC_REMINDERS;
+    const stored = localStorage.getItem(`upkotha_reminders_${user.id}`);
+    return stored ? JSON.parse(stored) : [];
+  });
   const [audioSummary, setAudioSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,6 +44,12 @@ export default function Reminders() {
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
 
   const loadLiveReminders = async () => {
+    if (!user) return;
+    if (user.id !== 'usr_imran_001') {
+      const stored = localStorage.getItem(`upkotha_reminders_${user.id}`);
+      setReminders(stored ? JSON.parse(stored) : []);
+      return;
+    }
     try {
       setIsLoading(true);
       const res = await api.getReminders();
@@ -58,7 +68,7 @@ export default function Reminders() {
 
   useEffect(() => {
     loadLiveReminders();
-  }, []);
+  }, [user]);
 
   const handleOpenPayModal = (item) => {
     setBillToPay(item);

@@ -61,7 +61,7 @@ export default function Profile() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-mono mt-0.5">{user?.phone}</p>
-              <p className="text-xs text-slate-400 mt-1">DIU CPC × upay AI Hackathon 2026 Sandbox</p>
+              <p className="text-xs text-slate-400 mt-1">উপকথা স্মার্ট এমএফএস ওয়ালেট</p>
             </div>
           </div>
 

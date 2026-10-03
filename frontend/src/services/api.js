@@ -8,10 +8,20 @@ const BASE_URL = 'http://localhost:5000/api';
 
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
+  
+  let currentUserId = 'usr_imran_001';
+  try {
+    const saved = localStorage.getItem('upkotha_auth_session');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed?.id) currentUserId = parsed.id;
+    }
+  } catch {}
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': 'usr_imran_001',
+      'x-user-id': currentUserId,
       ...options.headers,
     },
     ...options,

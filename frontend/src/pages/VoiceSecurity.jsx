@@ -21,6 +21,7 @@ import {
 import Layout from '../components/Layout';
 import Button from '../components/Button';
 import { useVoice } from '../context/VoiceContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { showToast } from '../utils/alert';
 
@@ -81,12 +82,19 @@ function detectFundamentalFrequency(buffer, sampleRate) {
 }
 
 export default function VoiceSecurity() {
+  const { user, updateVoiceProfile } = useAuth();
   const { speak, isListening: isContextListening, startListening: startContextListening, stopListening: stopContextListening, transcript } = useVoice();
 
   const [profile, setProfile] = useState(null);
   const [acousticSpec, setAcousticSpec] = useState(null);
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Custom Pitch & Range Sliders State
+  const [customMinHz, setCustomMinHz] = useState(120);
+  const [customMaxHz, setCustomMaxHz] = useState(180);
+  const [customF0, setCustomF0] = useState(145);
+  const [isSavingCustom, setIsSavingCustom] = useState(false);
 
   // Mode: 'live_mic' (Real Web Audio API Pitch detection) vs 'preset' (Judge Scenario simulator)
   const [testingMode, setTestingMode] = useState('live_mic');
@@ -126,9 +134,16 @@ export default function VoiceSecurity() {
         api.getVoiceLogs(),
       ]);
 
-      if (profRes.success) {
+      if (profRes.success && profRes.profile) {
         setProfile(profRes.profile);
         setAcousticSpec(profRes.acousticSpec);
+        if (profRes.profile.pitchRangeHz) {
+          setCustomMinHz(profRes.profile.pitchRangeHz[0]);
+          setCustomMaxHz(profRes.profile.pitchRangeHz[1]);
+        }
+        if (profRes.profile.fundamentalFrequencyHz) {
+          setCustomF0(Math.round(profRes.profile.fundamentalFrequencyHz));
+        }
       }
       if (logsRes.success) {
         setLogs(logsRes.logs);
@@ -138,6 +153,28 @@ export default function VoiceSecurity() {
       showToast.error('ভয়েস প্রোফাইল লোড করতে সমস্যা হয়েছে');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSaveCustomRange = async () => {
+    try {
+      setIsSavingCustom(true);
+      const res = await api.enrollVoice({
+        pitchHz: customF0,
+        minHz: customMinHz,
+        maxHz: customMaxHz,
+        phrase: 'আমার ব্যালেন্স কত',
+      });
+      if (res.success && res.profile) {
+        setProfile(res.profile);
+        updateVoiceProfile?.(res.profile);
+        showToast.success('অনুমোদিত পিচ রেঞ্জ সফলভাবে সংরক্ষণ করা হয়েছে!');
+        speak(`আপনার অ্যাকাউন্টের অনুমোদিত ভয়েস রেঞ্জ ${customMinHz} থেকে ${customMaxHz} হার্টজে সংরক্ষণ করা হয়েছে।`);
+      }
+    } catch (err) {
+      showToast.error('সংরক্ষণ ব্যর্থ হয়েছে');
+    } finally {
+      setIsSavingCustom(false);
     }
   };
 
@@ -307,7 +344,7 @@ export default function VoiceSecurity() {
   };
 
   return (
-    <Layout>
+    <Layout title="ভয়েস বায়োমেট্রিক" userName={user?.name}>
       <div className="max-w-4xl mx-auto space-y-6 pb-12">
         {/* ─── HEADER ──────────────────────────────────────────────── */}
         <div className="bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
@@ -368,7 +405,9 @@ export default function VoiceSecurity() {
               <span className="text-sm font-bold text-slate-800 block mt-0.5">
                 ~{Math.round(profile?.fundamentalFrequencyHz || 128)} Hz
               </span>
-              <span className="text-[10px] text-slate-500 block mt-1">ব্যাপ্তী: 110 - 155 Hz</span>
+              <span className="text-[10px] text-slate-500 block mt-1">
+                ব্যাপ্তী: {profile?.pitchRangeHz ? `${profile.pitchRangeHz[0]} - ${profile.pitchRangeHz[1]}` : '110 - 155'} Hz
+              </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
@@ -394,6 +433,96 @@ export default function VoiceSecurity() {
             <p className="leading-relaxed">
               <strong>গোপনীয়তা রক্ষা ও নীতি:</strong> উপকথা কোনো কাঁচা অডিও ফাইল সংরক্ষণ করে না। শুধুমাত্র একমুখী গাণিতিক বায়োমেট্রিক ভেক্টর (Mathematical Feature Vector) ব্যবহার করে সত্যতা যাচাই করা হয়।
             </p>
+          </div>
+        </div>
+
+        {/* ─── PITCH & TOLERANCE RANGE CUSTOMIZATION CARD ───────────── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <div className="flex items-center gap-2 text-slate-800 font-bold text-base">
+                <Sliders className="w-5 h-5 text-emerald-600" />
+                <span>ব্যক্তিগত ভয়েস পিচ ও অনুমোদিত রেঞ্জ কাস্টমাইজেশন</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                অ্যাকাউন্ট: <strong className="text-slate-800">{user?.name || profile?.primarySpeaker || 'ইমরান'}</strong> ({user?.phone}) — এই পিচ ও রেঞ্জ শুধুমাত্র এই অ্যাকাউন্টের জন্য সংরক্ষিত থাকবে।
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomMinHz(120);
+                  setCustomMaxHz(180);
+                  setCustomF0(145);
+                }}
+                className="text-xs text-emerald-700 hover:text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-50 font-semibold transition"
+              >
+                ডিফল্ট রেঞ্জ (১২০ - ১৮০ Hz)
+              </button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={isSavingCustom}
+                onClick={handleSaveCustomRange}
+                className="bg-emerald-700 hover:bg-emerald-800 text-xs"
+              >
+                সংরক্ষণ করুন
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Center Pitch F0 */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700">কেন্দ্র পিচ (Target F0):</span>
+                <span className="font-mono font-bold text-emerald-700 text-sm">~{customF0} Hz</span>
+              </div>
+              <input
+                type="range"
+                min="85"
+                max="240"
+                value={customF0}
+                onChange={(e) => setCustomF0(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <span className="text-[10px] text-slate-400 block">আপনার স্বাভাবিক কণ্ঠস্বরের গড় ফ্রিকোয়েন্সি</span>
+            </div>
+
+            {/* Min Range */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700">সর্বনিম্ন পিচ (Min Tolerance):</span>
+                <span className="font-mono font-bold text-emerald-700 text-sm">{customMinHz} Hz</span>
+              </div>
+              <input
+                type="range"
+                min="75"
+                max="150"
+                value={customMinHz}
+                onChange={(e) => setCustomMinHz(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <span className="text-[10px] text-slate-400 block">নিম্ন স্বরের অনুমোদিত প্রান্তসীমা</span>
+            </div>
+
+            {/* Max Range */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700">সর্বোচ্চ পিচ (Max Tolerance):</span>
+                <span className="font-mono font-bold text-emerald-700 text-sm">{customMaxHz} Hz</span>
+              </div>
+              <input
+                type="range"
+                min="160"
+                max="270"
+                value={customMaxHz}
+                onChange={(e) => setCustomMaxHz(Number(e.target.value))}
+                className="w-full accent-emerald-600 cursor-pointer"
+              />
+              <span className="text-[10px] text-slate-400 block">উচ্চ স্বরের অনুমোদিত প্রান্তসীমা (১২০-১৮০ Hz প্রস্তাবিত)</span>
+            </div>
           </div>
         </div>
 

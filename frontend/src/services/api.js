@@ -4,7 +4,10 @@
  * Automatically handles JSON parsing, headers, and friendly error propagation.
  */
 
-const BASE_URL = 'http://localhost:5000/api';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const BACKEND_URL = API_BASE.replace(/\/api\/?$/, '');
+
+const BASE_URL = API_BASE;
 
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
@@ -55,6 +58,7 @@ async function request(endpoint, options = {}) {
 export const api = {
   // Auth
   login: (phone, pin) => request('/auth/login', { method: 'POST', body: JSON.stringify({ phone, pin }) }),
+  register: (name, phone, pin) => request('/auth/register', { method: 'POST', body: JSON.stringify({ name, phone, pin }) }),
   getProfile: () => request('/auth/profile'),
 
   // Dashboard
@@ -87,6 +91,8 @@ export const api = {
   getVoiceProfile: () => request('/voice/profile'),
   enrollVoice: (payload = {}) => request('/voice/enroll', { method: 'POST', body: JSON.stringify(payload) }),
   getVoiceLogs: () => request('/voice/logs'),
+  getOnboardGreeting: (payload) => request('/voice/onboard-greeting', { method: 'POST', body: JSON.stringify(payload) }),
+  getTtsUrl: (text) => `${API_BASE}/voice/tts?text=${encodeURIComponent(text)}`,
 
   // Admin Telemetry & Audit
   getAdminMetrics: () => request('/admin/metrics'),

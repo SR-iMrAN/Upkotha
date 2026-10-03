@@ -6,6 +6,7 @@ import { useVoice } from '../context/VoiceContext';
 import Button from '../components/Button';
 import VoiceGuide from '../components/VoiceGuide';
 import { showToast, showAlert } from '../utils/alert';
+import api from '../services/api';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -46,12 +47,7 @@ export default function Register() {
     setActiveStep('PHONE');
 
     try {
-      const res = await fetch('http://localhost:5000/api/voice/onboard-greeting', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed, step: 'NAME' }),
-      });
-      const data = await res.json();
+      const data = await api.getOnboardGreeting({ name: trimmed, step: 'NAME' });
       const prompt = (data.spokenText || `হ্যালো, ${trimmed}! এবার আপনার সচল ১১ ডিজিটের মোবাইল নম্বর দিন।`).replace(/নমস্কার/g, 'হ্যালো');
       setGuideMessage(prompt);
       speak(prompt);

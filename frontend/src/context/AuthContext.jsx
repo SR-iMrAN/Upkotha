@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { showToast } from '../utils/alert';
+import api from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -73,12 +74,7 @@ export function AuthProvider({ children }) {
 
       // 1. Attempt server-side login
       try {
-        const res = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, pin: cleanPin }),
-        });
-        const data = await res.json();
+        const data = await api.login(phone, cleanPin);
         if (data.success && data.user) {
           loggedUser = data.user;
         }
@@ -135,12 +131,7 @@ export function AuthProvider({ children }) {
 
       let backendUser = null;
       try {
-        const res = await fetch('http://localhost:5000/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, phone, pin }),
-        });
-        const data = await res.json();
+        const data = await api.register(name, phone, pin);
         if (data.success && data.user) {
           backendUser = data.user;
         }

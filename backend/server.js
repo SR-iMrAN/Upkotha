@@ -19,7 +19,20 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 // Security & Parsing Middleware
 app.use(cors({
-  origin: [CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin === CLIENT_URL ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.endsWith('.netlify.app') ||
+      origin.endsWith('.vercel.app') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -35,7 +48,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
+// Root & Health check endpoints
+app.get('/', (req, res) => {
+  res.json({
+    service: 'UPKOTHA Backend API',
+    tagline: 'সহজ ভাষায়, বুদ্ধিমানভাবে, নিরাপদে ডিজিটাল ফাইন্যান্স',
+    status: 'ONLINE',
+    health: '/api/health',
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'UP',
@@ -60,8 +82,8 @@ app.use('/api/admin', adminRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// Start Server
-if (process.env.NODE_ENV !== 'test') {
+// Start Server (only when not running inside Vercel serverless environment)
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`🚀 UPKOTHA Backend Server is running on port ${PORT}`);

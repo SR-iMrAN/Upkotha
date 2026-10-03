@@ -217,7 +217,7 @@ export function VoiceProvider({ children }) {
       // where English voice fails to read Bangla Unicode and only pronounces "comma"):
       // Stream natural, fluent Bengali voice directly from our backend TTS engine!
       if (!banglaVoice) {
-        const ttsUrl = `http://localhost:5000/api/voice/tts?text=${encodeURIComponent(cleanText)}`;
+        const ttsUrl = api.getTtsUrl(cleanText);
         const player = new Audio(ttsUrl);
         audioPlayerRef.current = player;
         setIsSpeaking(true);

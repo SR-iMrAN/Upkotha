@@ -6,11 +6,22 @@ import Button from '../components/Button';
 import VoiceGuide from '../components/VoiceGuide';
 import { showToast, showAlert } from '../utils/alert';
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  const bnToEn = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  return String(str).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
+}
+
 export default function Login() {
   const recentRegistered = React.useMemo(() => {
     try {
       const saved = localStorage.getItem('upkotha_last_registered_account');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) return JSON.parse(saved);
+      const list = JSON.parse(localStorage.getItem('upkotha_registered_accounts') || '[]');
+      return list.length > 0 ? list[list.length - 1] : null;
     } catch {
       return null;
     }
@@ -22,6 +33,10 @@ export default function Login() {
       if (savedAcc) {
         const parsed = JSON.parse(savedAcc);
         if (parsed.phone) return parsed.phone;
+      }
+      const list = JSON.parse(localStorage.getItem('upkotha_registered_accounts') || '[]');
+      if (list.length > 0 && list[list.length - 1]?.phone) {
+        return list[list.length - 1].phone;
       }
       return localStorage.getItem('upkotha_last_logged_phone') || '01712-345678';
     } catch {
@@ -35,6 +50,10 @@ export default function Login() {
       if (savedAcc) {
         const parsed = JSON.parse(savedAcc);
         if (parsed.pin) return parsed.pin;
+      }
+      const list = JSON.parse(localStorage.getItem('upkotha_registered_accounts') || '[]');
+      if (list.length > 0 && list[list.length - 1]?.pin) {
+        return list[list.length - 1].pin;
       }
       return '1234';
     } catch {
@@ -185,7 +204,7 @@ export default function Login() {
                 type="password"
                 maxLength={4}
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setPin(normalizeDigits(e.target.value).replace(/\D/g, ''))}
                 placeholder="••••"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 text-sm tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
               />

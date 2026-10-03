@@ -8,6 +8,15 @@ import VoiceGuide from '../components/VoiceGuide';
 import { showToast, showAlert } from '../utils/alert';
 import api from '../services/api';
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  const bnToEn = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  return String(str).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
+}
+
 export default function Register() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -63,7 +72,7 @@ export default function Register() {
     const val = e.target.value;
     setPhone(val);
 
-    const clean = val.replace(/\D/g, '');
+    const clean = normalizeDigits(val).replace(/\D/g, '');
     if (clean.length === 11 && !phoneSpokenRef.current) {
       phoneSpokenRef.current = true;
       setActiveStep('PIN');
@@ -76,10 +85,11 @@ export default function Register() {
 
   // 4. Handle PIN confirmation
   const handleConfirmPinChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '');
+    const val = normalizeDigits(e.target.value).replace(/\D/g, '');
     setConfirmPin(val);
 
-    if (pin.length === 4 && val.length === 4 && pin === val && !pinSpokenRef.current) {
+    const cleanPin = normalizeDigits(pin).replace(/\D/g, '');
+    if (cleanPin.length === 4 && val.length === 4 && cleanPin === val && !pinSpokenRef.current) {
       pinSpokenRef.current = true;
       setActiveStep('READY');
       const readyPrompt = 'পিন নিশ্চিত হয়েছে! এবার নিচে "অ্যাকাউন্ট তৈরি করুন" বোতামে চাপ দিন।';
@@ -92,22 +102,26 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const cleanPhone = normalizeDigits(phone).replace(/\D/g, '');
+    const cleanPin = normalizeDigits(pin).replace(/\D/g, '');
+    const cleanConfirmPin = normalizeDigits(confirmPin).replace(/\D/g, '');
+
     if (!name.trim()) {
       showToast.error('অনুগ্রহ করে আপনার পুরো নাম লিখুন');
       speak('অনুগ্রহ করে আপনার পুরো নাম লিখুন।');
       return;
     }
-    if (!phone || phone.replace(/\D/g, '').length < 11) {
+    if (!cleanPhone || cleanPhone.length < 11) {
       showToast.error('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন');
       speak('সঠিক ১১ ডিজিটের মোবাইল নম্বর প্রদান করুন।');
       return;
     }
-    if (!pin || pin.length !== 4) {
+    if (!cleanPin || cleanPin.length !== 4) {
       showToast.error('৪ ডিজিটের গোপন পিন কোড সেট করুন');
       speak('৪ ডিজিটের গোপন পিন কোড সেট করুন।');
       return;
     }
-    if (pin !== confirmPin) {
+    if (cleanPin !== cleanConfirmPin) {
       showToast.error('দুইবারের পিন কোড মেলেনি');
       speak('দুইবারের পিন কোড মেলেনি। পুনরায় যাচাই করুন।');
       return;
@@ -115,7 +129,7 @@ export default function Register() {
 
     try {
       setIsLoading(true);
-      await register(name.trim(), phone, pin);
+      await register(name.trim(), cleanPhone, cleanPin);
 
       // Spoken congratulatory celebration requested by user
       const successGreeting = `অভিনন্দন ${name.trim()}! আপনার উপকথা অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। স্বাগতম!`;

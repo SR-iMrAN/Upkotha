@@ -1,5 +1,22 @@
 import db from '../dataStore.js';
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  const bnToEn = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  return String(str).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
+}
+
+function normalizePhone(str) {
+  if (!str) return '';
+  const normalized = normalizeDigits(str).replace(/\D/g, '');
+  if (normalized.startsWith('880')) return normalized.slice(2);
+  if (normalized.startsWith('88')) return normalized.slice(2);
+  return normalized;
+}
+
 export const login = (req, res) => {
   const { phone, pin } = req.body;
 
@@ -10,18 +27,20 @@ export const login = (req, res) => {
     });
   }
 
-  // Find user by phone and PIN
+  // Find user by normalized phone and PIN
   const users = db.getAll('users');
-  const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+  const cleanPhone = normalizePhone(phone);
+  const cleanPin = normalizeDigits(pin).trim();
   
   let user = null;
   if (cleanPhone) {
     user = users.find(u => {
-      const userClean = u.phone ? u.phone.replace(/\D/g, '') : '';
-      return userClean === cleanPhone && String(u.pin) === String(pin);
+      const userPhone = normalizePhone(u.phone);
+      const userPin = normalizeDigits(u.pin).trim();
+      return userPhone === cleanPhone && userPin === cleanPin;
     });
   } else {
-    user = users.find(u => String(u.pin) === String(pin));
+    user = users.find(u => normalizeDigits(u.pin).trim() === cleanPin);
   }
 
   if (!user) {
@@ -54,7 +73,26 @@ export const register = (req, res) => {
     });
   }
 
-  const cleanPhone = phone.trim();
+  const cleanPhone = normalizePhone(phone);
+  const cleanPin = normalizeDigits(pin).trim();
+  const users = db.getAll('users');
+
+  // Check if an existing account with this phone already exists
+  const existingUser = users.find(u => normalizePhone(u.phone) === cleanPhone);
+  if (existingUser) {
+    existingUser.name = name.trim();
+    existingUser.pin = cleanPin;
+    db.save('users');
+    return res.json({
+      success: true,
+      message: `স্বাগতম, ${name.trim()}! আপনার অ্যাকাউন্ট সফলভাবে সংরক্ষিত হয়েছে।`,
+      user: {
+        ...existingUser,
+        contacts: db.getAll('contacts').filter(c => c.userId === existingUser.id),
+      },
+    });
+  }
+
   const userId = `usr_${Date.now()}`;
 
   // New registered user gets ৳15,000 available balance, ৳0 locked balance
@@ -62,7 +100,7 @@ export const register = (req, res) => {
     id: userId,
     name: name.trim(),
     phone: cleanPhone,
-    pin: pin.trim(),
+    pin: cleanPin,
     availableBalance: 15000,
     lockedBalance: 0,
     totalBalance: 15000,

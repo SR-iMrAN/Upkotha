@@ -23,6 +23,23 @@ const DEFAULT_DEMO_USER = {
 const STORAGE_KEY = 'upkotha_auth_session';
 const REGISTRY_KEY = 'upkotha_registered_accounts';
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  const bnToEn = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
+    '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9',
+  };
+  return String(str).replace(/[০-৯]/g, (d) => bnToEn[d] || d);
+}
+
+function normalizePhone(str) {
+  if (!str) return '';
+  const normalized = normalizeDigits(str).replace(/\D/g, '');
+  if (normalized.startsWith('880')) return normalized.slice(2);
+  if (normalized.startsWith('88')) return normalized.slice(2);
+  return normalized;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -47,9 +64,9 @@ export function AuthProvider({ children }) {
   const syncToRegistry = (updatedUser) => {
     if (!updatedUser || !updatedUser.phone) return;
     try {
-      const cleanPhone = updatedUser.phone.replace(/\D/g, '');
+      const cleanPhone = normalizePhone(updatedUser.phone);
       const existing = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
-      const filtered = existing.filter((a) => (a.phone ? a.phone.replace(/\D/g, '') : '') !== cleanPhone);
+      const filtered = existing.filter((a) => normalizePhone(a.phone) !== cleanPhone);
       localStorage.setItem(REGISTRY_KEY, JSON.stringify([...filtered, updatedUser]));
     } catch (e) {
       console.warn('Failed to sync user to registry', e);
@@ -66,37 +83,41 @@ export function AuthProvider({ children }) {
   // Account Login with true multi-account resolution
   const login = async (phone, pin) => {
     setIsLoading(true);
-    const cleanInputPhone = phone ? phone.replace(/\D/g, '') : '';
-    const cleanPin = pin ? String(pin).trim() : '';
+    const cleanInputPhone = normalizePhone(phone);
+    const cleanPin = normalizeDigits(pin).trim();
 
     try {
       let loggedUser = null;
 
       // 1. Attempt server-side login
       try {
-        const data = await api.login(phone, cleanPin);
+        const data = await api.login(cleanInputPhone, cleanPin);
         if (data.success && data.user) {
           loggedUser = data.user;
+          syncToRegistry(loggedUser);
         }
       } catch (backendErr) {
-        console.warn('Backend login unavailable, checking local registry', backendErr);
+        console.warn('Backend login unavailable, checking local registry', backendErr.message);
       }
 
       // 2. Fallback to client-side registered accounts
       if (!loggedUser) {
         const localAccounts = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
         const matched = localAccounts.find((acc) => {
-          const accPhoneClean = acc.phone ? acc.phone.replace(/\D/g, '') : '';
-          return accPhoneClean === cleanInputPhone && String(acc.pin) === cleanPin;
+          const accPhoneClean = normalizePhone(acc.phone);
+          const accPinClean = normalizeDigits(acc.pin).trim();
+          return accPhoneClean === cleanInputPhone && accPinClean === cleanPin;
         });
         if (matched) {
           loggedUser = matched;
+          // Re-hydrate backend in background so serverless functions know about this account
+          api.register(matched.name, matched.phone, matched.pin).catch(() => {});
         }
       }
 
       // 3. Fallback to default Imran demo account
       if (!loggedUser) {
-        const imranPhoneClean = DEFAULT_DEMO_USER.phone.replace(/\D/g, '');
+        const imranPhoneClean = normalizePhone(DEFAULT_DEMO_USER.phone);
         if ((cleanInputPhone === imranPhoneClean || cleanInputPhone === '01712345678') && cleanPin === '1234') {
           loggedUser = { ...DEFAULT_DEMO_USER };
         }
@@ -112,6 +133,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('upkotha_is_logged_in', 'true');
       localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
       localStorage.setItem('upkotha_last_logged_phone', loggedUser.phone);
+      localStorage.setItem('upkotha_user', JSON.stringify(loggedUser));
       showToast.success(`স্বাগতম, ${loggedUser.name}! সফলভাবে লগইন হয়েছে।`);
       return loggedUser;
     } finally {
@@ -124,14 +146,17 @@ export function AuthProvider({ children }) {
     setIsLoading(true);
 
     try {
-      if (!name || !phone || !pin || pin.length !== 4) {
+      const cleanPhone = normalizePhone(phone);
+      const cleanPin = normalizeDigits(pin).trim();
+
+      if (!name || !cleanPhone || cleanPin.length !== 4) {
         showToast.error('অনুগ্রহ করে সঠিক নাম, মোবাইল নম্বর এবং ৪ ডিজিটের পিন দিন');
         throw new Error('তথ্য অসম্পূর্ণ');
       }
 
       let backendUser = null;
       try {
-        const data = await api.register(name, phone, pin);
+        const data = await api.register(name, cleanPhone, cleanPin);
         if (data.success && data.user) {
           backendUser = data.user;
         }
@@ -143,8 +168,8 @@ export function AuthProvider({ children }) {
       const newUser = {
         id: userId,
         name: name.trim(),
-        phone: phone.trim(),
-        pin: pin.trim(),
+        phone: cleanPhone,
+        pin: cleanPin,
         availableBalance: 15000,
         lockedBalance: 0,
         totalBalance: 15000,
@@ -168,9 +193,8 @@ export function AuthProvider({ children }) {
       // Persist in accounts registry
       try {
         const localAccounts = JSON.parse(localStorage.getItem(REGISTRY_KEY) || '[]');
-        const cleanNewPhone = newUser.phone.replace(/\D/g, '');
         const updatedAccounts = [
-          ...localAccounts.filter((a) => (a.phone ? a.phone.replace(/\D/g, '') : '') !== cleanNewPhone),
+          ...localAccounts.filter((a) => normalizePhone(a.phone) !== cleanPhone),
           newUser,
         ];
         localStorage.setItem(REGISTRY_KEY, JSON.stringify(updatedAccounts));
@@ -192,6 +216,7 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       localStorage.setItem('upkotha_is_logged_in', 'true');
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+      localStorage.setItem('upkotha_user', JSON.stringify(newUser));
       showToast.success(`অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে! স্বাগতম ${name}`);
       return newUser;
     } finally {

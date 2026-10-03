@@ -4,7 +4,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_DIR = path.join(__dirname, 'data');
+const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const SEED_DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = isVercel ? path.join('/tmp', 'upkotha_data') : SEED_DATA_DIR;
 
 /**
  * Lightweight JSON file data store with in-memory cache and atomic write-back.
@@ -18,17 +20,44 @@ class DataStore {
   }
 
   init() {
-    for (const name of this.collections) {
-      const filePath = path.join(DATA_DIR, `${name}.json`);
+    if (isVercel) {
       try {
-        if (fs.existsSync(filePath)) {
-          const raw = fs.readFileSync(filePath, 'utf-8');
-          this.cache[name] = JSON.parse(raw);
-        } else {
-          this.cache[name] = [];
+        if (!fs.existsSync(DATA_DIR)) {
+          fs.mkdirSync(DATA_DIR, { recursive: true });
         }
-      } catch (err) {
-        console.error(`Failed to load ${name}.json:`, err.message);
+      } catch (e) {
+        console.warn('Failed to create tmp data directory:', e.message);
+      }
+    }
+
+    for (const name of this.collections) {
+      const activeFilePath = path.join(DATA_DIR, `${name}.json`);
+      const seedFilePath = path.join(SEED_DATA_DIR, `${name}.json`);
+
+      let loaded = false;
+      if (fs.existsSync(activeFilePath)) {
+        try {
+          const raw = fs.readFileSync(activeFilePath, 'utf-8');
+          this.cache[name] = JSON.parse(raw);
+          loaded = true;
+        } catch (err) {}
+      }
+
+      if (!loaded && fs.existsSync(seedFilePath)) {
+        try {
+          const raw = fs.readFileSync(seedFilePath, 'utf-8');
+          this.cache[name] = JSON.parse(raw);
+          // If on Vercel, copy seed to /tmp for future updates
+          if (isVercel) {
+            try {
+              fs.writeFileSync(activeFilePath, raw, 'utf-8');
+            } catch (e) {}
+          }
+          loaded = true;
+        } catch (err) {}
+      }
+
+      if (!loaded) {
         this.cache[name] = [];
       }
     }
@@ -39,7 +68,7 @@ class DataStore {
     try {
       fs.writeFileSync(filePath, JSON.stringify(this.cache[name], null, 2), 'utf-8');
     } catch (err) {
-      console.error(`Failed to save ${name}.json:`, err.message);
+      console.warn(`Failed to save ${name}.json:`, err.message);
     }
   }
 

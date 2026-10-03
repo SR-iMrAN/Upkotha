@@ -79,7 +79,27 @@ class DataStore {
 
   // Domain-specific helpers
   getUser(userId = 'usr_imran_001') {
-    return this.getById('users', userId);
+    const user = this.getById('users', userId);
+    if (user) return user;
+    if (userId === 'usr_imran_001') {
+      return {
+        id: 'usr_imran_001',
+        name: 'ইমরান',
+        phone: '01712-345678',
+        availableBalance: 13500,
+        lockedBalance: 5000,
+        totalBalance: 18500,
+        role: 'DEMO_USER',
+        isStrictMode: false,
+        voiceProfile: {
+          isEnrolled: true,
+          primarySpeaker: 'ইমরান হোসেন',
+          pitchRangeHz: [110, 155],
+          fundamentalFrequencyHz: 128.4,
+        },
+      };
+    }
+    return null;
   }
 
   updateUserBalances(userId, { availableBalance, lockedBalance }) {

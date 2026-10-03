@@ -13,11 +13,15 @@ async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   
   let currentUserId = 'usr_imran_001';
+  let currentUserName = 'ইমরান';
+  let currentUserPhone = '01712-345678';
   try {
     const saved = localStorage.getItem('upkotha_auth_session');
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed?.id) currentUserId = parsed.id;
+      if (parsed?.name) currentUserName = parsed.name;
+      if (parsed?.phone) currentUserPhone = parsed.phone;
     }
   } catch {}
 
@@ -25,6 +29,8 @@ async function request(endpoint, options = {}) {
     headers: {
       'Content-Type': 'application/json',
       'x-user-id': currentUserId,
+      'x-user-name': encodeURIComponent(currentUserName),
+      'x-user-phone': currentUserPhone,
       ...options.headers,
     },
     ...options,

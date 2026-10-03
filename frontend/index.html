@@ -13,6 +13,26 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <style>
+      #nl-badge-frame, #nl-hud-frame, iframe[title*="Netlify"], iframe[srcdoc*="Netlify"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+      }
+    </style>
+    <script>
+      (function() {
+        const killBadge = () => {
+          document.querySelectorAll('#nl-badge-frame, #nl-hud-frame, iframe[title*="Netlify"]').forEach(f => f.remove());
+        };
+        const obs = new MutationObserver(killBadge);
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+        window.addEventListener('DOMContentLoaded', killBadge);
+      })();
+    </script>
   </head>
   <body class="bg-base-200 text-neutral min-h-screen antialiased font-sans">
     <div id="root"></div>

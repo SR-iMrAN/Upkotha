@@ -7,3 +7,21 @@
     font-family: 'Inter', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }
+
+/* Hide Netlify injected badge / HUD widget */
+#nl-badge-frame,
+#nl-hud-frame,
+iframe[srcdoc*="Netlify"],
+iframe[title*="Netlify"],
+iframe[id^="nl-"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  clip-path: path("M0 0Z") !important;
+  position: absolute !important;
+  top: -9999px !important;
+}
+

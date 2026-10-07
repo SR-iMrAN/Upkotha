@@ -430,6 +430,7 @@ export default function SendMoney() {
           isStrictMode={user?.isStrictMode}
           anomalyWarning={stagedData?.anomalySignal?.messageBangla}
           anomalySignal={stagedData?.anomalySignal}
+          riskAssessment={stagedData?.riskAssessment}
           voiceBiometric={stagedData?.voiceBiometric}
           isLoading={isExecuting}
         />

@@ -18,6 +18,7 @@ import StrictMode from './pages/StrictMode';
 import Voice from './pages/Voice';
 import VoiceSecurity from './pages/VoiceSecurity';
 import AdminDashboard from './pages/AdminDashboard';
+import SecurityArchitecture from './pages/SecurityArchitecture';
 import DesignSystemShowcase from './pages/DesignSystemShowcase';
 import Button from './components/Button';
 
@@ -39,6 +40,12 @@ function Home() {
         </div>
 
         <div className="flex-none gap-2 sm:gap-3">
+          <Link to="/security-architecture">
+            <Button variant="outline" size="sm" className="border-emerald-600 text-emerald-800 bg-emerald-50 hover:bg-emerald-100">
+              AI আর্কিটেকচার
+            </Button>
+          </Link>
+
           <Link to="/design-system" className="hidden md:inline-flex">
             <Button variant="outline" size="sm">
               ডিজাইন সিস্টেম
@@ -244,8 +251,32 @@ export default function App() {
               }
             />
 
+            <Route
+              path="/security-architecture"
+              element={
+                <ProtectedRoute>
+                  <SecurityArchitecture />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ai-architecture"
+              element={
+                <ProtectedRoute>
+                  <SecurityArchitecture />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/judge-demo"
+              element={
+                <ProtectedRoute>
+                  <SecurityArchitecture />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Fallbacks & Redirects */}
-            <Route path="/judge-demo" element={<Navigate to="/dashboard" replace />} />
             <Route path="/demo" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

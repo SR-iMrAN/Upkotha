@@ -99,6 +99,7 @@ export const api = {
   getVoiceLogs: () => request('/voice/logs'),
   getOnboardGreeting: (payload) => request('/voice/onboard-greeting', { method: 'POST', body: JSON.stringify(payload) }),
   getTtsUrl: (text) => `${API_BASE}/voice/tts?text=${encodeURIComponent(text)}`,
+  analyzeRisk: (payload = {}) => request('/risk/analyze', { method: 'POST', body: JSON.stringify(payload) }),
 
   // Admin Telemetry & Audit
   getAdminMetrics: () => request('/admin/metrics'),

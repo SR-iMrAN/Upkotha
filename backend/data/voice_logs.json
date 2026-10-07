@@ -1,5 +1,20 @@
 [
   {
+    "id": "vauth_1791348774588",
+    "userId": "usr_imran_001",
+    "timestamp": "2026-10-07T04:52:54.588Z",
+    "type": "BIOMETRIC_VERIFICATION",
+    "speakerIdentified": "অপরিচিত ব্যক্তি (195 Hz)",
+    "similarityScore": 34,
+    "livenessScore": 92.5,
+    "antiSpoofStatus": "SPEAKER_MISMATCH",
+    "isVerified": false,
+    "confidenceLevel": "LOW",
+    "sampleTranscript": "ভয়েস কমান্ড",
+    "sampleDuration": 2.1,
+    "privacyCompliant": true
+  },
+  {
     "id": "vlog_1791050627365",
     "userId": "usr_imran_001",
     "timestamp": "2026-10-03T18:03:47.365Z",

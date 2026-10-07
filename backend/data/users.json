@@ -71,8 +71,8 @@
     "name": "ইমরান",
     "phone": "01712-345678",
     "pin": "1234",
-    "availableBalance": 13500,
-    "lockedBalance": 5000,
+    "availableBalance": 13400,
+    "lockedBalance": 5100,
     "totalBalance": 18500,
     "currency": "BDT",
     "isStrictMode": false,
@@ -94,7 +94,7 @@
       "sampleCount": 7,
       "securityThreshold": 0.85,
       "antiSpoofEnabled": true,
-      "lastVerifiedAt": "2026-10-03T18:03:46.072Z",
+      "lastVerifiedAt": "2026-10-07T05:41:14.612Z",
       "lastCalibratedAt": "2026-10-03T10:52:16.910Z"
     }
   }

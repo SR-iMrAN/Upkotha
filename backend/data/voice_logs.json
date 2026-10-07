@@ -1,17 +1,17 @@
 [
   {
-    "id": "vauth_1791348774588",
+    "id": "vauth_1791351674606",
     "userId": "usr_imran_001",
-    "timestamp": "2026-10-07T04:52:54.588Z",
+    "timestamp": "2026-10-07T05:41:14.606Z",
     "type": "BIOMETRIC_VERIFICATION",
-    "speakerIdentified": "অপরিচিত ব্যক্তি (195 Hz)",
-    "similarityScore": 34,
-    "livenessScore": 92.5,
-    "antiSpoofStatus": "SPEAKER_MISMATCH",
-    "isVerified": false,
-    "confidenceLevel": "LOW",
-    "sampleTranscript": "ভয়েস কমান্ড",
-    "sampleDuration": 2.1,
+    "speakerIdentified": "ইমরান হোসেন",
+    "similarityScore": 95,
+    "livenessScore": 97.4,
+    "antiSpoofStatus": "PASS",
+    "isVerified": true,
+    "confidenceLevel": "HIGH",
+    "sampleTranscript": "রাকিবকে ৫০০ টাকা পাঠাও",
+    "sampleDuration": 2.5,
     "privacyCompliant": true
   },
   {

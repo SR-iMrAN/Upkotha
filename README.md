@@ -85,6 +85,24 @@ Here is what was built and implemented in this upgrade:
 ### 8. Automated ML Verification Suite
 - Created `backend/test_ml_security_pipeline.js` validating all 3 scenarios, Isolation Forest path lengths, cosine similarity, spoof rejection, and adaptive friction tiers with **19/19 tests passing (100%)**.
 
+### 9. Customer Impact Measurement & Real-Time Admin Telemetry Console
+- **In-App Customer Feedback Loop (`CustomerFeedback.jsx`):**
+  - Following transaction completion (e.g., Send Money receipt), users are presented with a lightweight, interactive 3-question survey:
+    - **Confidence (আত্মবিশ্বাস):** User confidence in executing the financial transfer.
+    - **Ease of Use (সহজবোধ্যতা):** Ease of understanding the voice prompts and confirmation screens.
+    - **Satisfaction (সন্তুষ্টি):** Overall satisfaction rating on a 5-star rating scale.
+  - Automatically captures duration (`durationMs`) and source channel (`voice` vs. `text`).
+- **Telemetry Event Pipeline (`impactController.js` & `impactRoutes.js`):**
+  - Logs `task_started`, `task_completed`, `task_feedback`, and `task_error` events across 7 core financial actions (`send_money`, `cash_out`, `money_lock`, `bill_reminder`, `transaction_understanding`, `balance_check`, `voice_navigation`).
+  - Privacy-by-design compliance: Never stores raw audio, PINs, OTPs, or financial secrets.
+- **Operator Admin Dashboard (`AdminDashboard.jsx`):**
+  - Dedicated **"Customer Impact Measurement"** console section.
+  - Real-time KPIs: **Task Completion Rate (%)**, **Average Completion Time (seconds)**, **Average Confidence (/5)**, and **Average Satisfaction (/5)**.
+  - Secondary metrics: Tasks Started, Tasks Completed, Feedback Responses, Error Events.
+  - Visual Ease of Use progress bar and Voice vs. Text interaction channel ratios.
+  - Granular task breakdown table tracking completion rate, starts, successes, and failures for each financial service.
+  - Real-time verification badge: Displays `REAL USER DATA` vs. `NO USER DATA YET`.
+
 ---
 
 ## 2. System Architecture & Tier Separation
@@ -157,6 +175,9 @@ UPKOTHA enforces a strict 3-tier boundary:
    - Enforces heightened security guardrails, extra confirmation dialogs, and biometric checks across all transactions.
 10. **Natural Bengali Text-to-Speech (TTS):**
     - Spoken confirmations, step-by-step registration guidance, and friendly balance readouts across desktop and mobile browsers.
+11. **Customer Impact & Feedback Measurement Console (`/admin`):**
+    - Post-transaction interactive satisfaction widget capturing Confidence, Ease of Use, and Satisfaction ratings on a 5-star scale.
+    - Operator admin dashboard displaying real-time task completion rates, average completion speeds, and voice vs. text channel splits across 7 financial flows.
 
 ### How the AI Components are Used
 - **Google Gemini 2.5 Flash (`@google/genai`):**
@@ -347,6 +368,20 @@ Judges can test the multi-factor ML security layer directly via the dedicated in
 #### Scenario C: High Risk / Fraud Attack (উচ্চ ঝুঁকি - অ্যানোমালি ও স্পুফ)
 - **Parameters:** Recipient: New unknown (+8801999999999), Amount: ৳15,000 (33x baseline average), Time: 2:47 AM (deep midnight), Voice Similarity: 58%, Spoof: 88% (synthetic AI replay).
 - **Expected Outcome:** Risk Score ~0.86 (HIGH), Action: `HIGH_FRICTION_CHALLENGE`, High-friction biometric challenge warning + explicit consent checkbox $\rightarrow$ PIN.
+
+### Customer Impact & Feedback Loop Testing
+1. Navigate to **Send Money** (`/send-money`) and complete a transfer of ৳500 to Rakib with PIN `1234`.
+2. On the transaction receipt page, notice the interactive **Customer Feedback** card asking: *"আপনার অভিজ্ঞতা কেমন ছিল?"*.
+3. Submit 5-star ratings for:
+   - **আত্মবিশ্বাস (Confidence)**
+   - **সহজবোধ্যতা (Ease of Use)**
+   - **সার্বিক সন্তুষ্টি (Overall Satisfaction)**
+4. Tap **"মতামত পাঠান"** and observe toast confirmation: *"আপনার মতামত সংরক্ষণ করা হয়েছে। ধন্যবাদ!"*.
+5. Navigate to the **Admin Console** at `/admin`.
+6. Inspect the **"Customer Impact Measurement"** console section:
+   - Notice real-time calculations for **Task Completion Rate**, **Avg. Completion Time**, **Confidence (/5)**, and **Satisfaction (/5)**.
+   - Observe the **Send Money** row in the **Task-Level Customer Outcomes** breakdown table updating with live counts.
+   - Verification badge indicates: `REAL USER DATA`.
 
 ---
 

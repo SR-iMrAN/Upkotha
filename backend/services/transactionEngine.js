@@ -1,4 +1,5 @@
 import db from '../dataStore.js';
+import { evaluateTransactionRisk } from './riskEngine.js';
 
 // In-memory staged transactions cache with 5-minute TTL
 const stagedTickets = new Map();
@@ -120,24 +121,56 @@ export const stageTransaction = ({
     }
   }
 
-  // 4. Behavioral Anomaly and Strict Mode Signals
-  const isHighValue = numAmount >= TRANSACTION_LIMITS.ANOMALY_THRESHOLD;
+  // 4. ML Behavioral Anomaly and Multi-Factor Security Intelligence Layer
   const isStrictActive = Boolean(isStrictMode || user.isStrictMode);
-  let anomalySignal = null;
+  const recipientIsNew = type === 'send_money' ? !matchedContact : false;
+  
+  // Historical stats from user transactions
+  const userTxns = db.getAll('transactions').filter(t => t.userId === user.id && t.type === 'send_money');
+  const userAvg = userTxns.length > 0 
+    ? userTxns.reduce((sum, t) => sum + (t.amount || 0), 0) / userTxns.length 
+    : 450;
 
-  if (isHighValue) {
+  const riskAssessment = evaluateTransactionRisk({
+    transaction: {
+      amount: numAmount,
+      recipient: targetDisplayName,
+      recipientIsNew,
+      recipientFrequency: matchedContact ? 8 : 0,
+      hour: new Date().getHours(),
+      day: new Date().getDay(),
+      dailyCount: 2,
+      dailyTotal: numAmount,
+    },
+    voice: {
+      speakerType: voiceBiometric?.isVerified === false ? 'imposter' : 'owner',
+      isSpoofSimulated: voiceBiometric?.antiSpoofStatus === 'SYNTHETIC_SPOOF_DETECTED',
+      audioFeatures: voiceBiometric?.audioFeatures || null,
+    },
+    userProfile: {
+      averageAmount: userAvg,
+      stdAmount: 160,
+      isStrictMode: isStrictActive,
+    },
+  });
+
+  // Construct backward-compatible anomalySignal for existing UI components
+  let anomalySignal = null;
+  if (riskAssessment.riskLevel === 'HIGH') {
     anomalySignal = {
       level: 'WARNING',
-      title: 'উচ্চ মূল্যের লেনদেনের সতর্কতা (High Value Alert)',
-      messageBangla: `সতর্কতা: ৳${new Intl.NumberFormat('bn-BD').format(numAmount)} টাকা আপনার সাধারণ লেনদেনের চেয়ে বেশি। প্রাপকের নাম ও নম্বর সতর্কতার সাথে যাচাই করুন।`,
+      title: 'উচ্চ ঝুঁকি নিরাপত্তা সংকেত (High Risk Alert)',
+      messageBangla: riskAssessment.signals[0]?.detail || `সতর্কতা: ৳${new Intl.NumberFormat('bn-BD').format(numAmount)} টাকার লেনদেনটিতে অস্বাভাবিক ঝুঁকি শনাক্ত হয়েছে।`,
       requiresDoubleConfirmation: true,
+      requiresBiometricChallenge: true,
     };
-  } else if (type === 'send_money' && !matchedContact) {
+  } else if (riskAssessment.riskLevel === 'MEDIUM') {
     anomalySignal = {
       level: 'CAUTION',
-      title: 'অপরিচিত প্রাপক সতর্কতা',
-      messageBangla: `সতর্কতা: '${targetDisplayName}' আপনার সংরক্ষিত পরিচিতি তালিকায় নেই। ভুল নম্বরে টাকা পাঠানো রোধে নম্বরটি পুনরায় যাচাই করুন।`,
-      requiresDoubleConfirmation: isStrictActive,
+      title: 'মাঝারি ঝুঁকি সতর্কতা (Moderate Caution)',
+      messageBangla: riskAssessment.signals[0]?.detail || `সতর্কতা: '${targetDisplayName}'-এর লেনদেনটি সম্পন্ন করতে তথ্য পুনরায় যাচাই করুন।`,
+      requiresDoubleConfirmation: true,
+      requiresBiometricChallenge: false,
     };
   } else if (isStrictActive) {
     anomalySignal = {
@@ -145,6 +178,7 @@ export const stageTransaction = ({
       title: 'স্ট্রিক্ট মোড সুরক্ষা সক্রিয়',
       messageBangla: 'স্ট্রিক্ট মোড সুরক্ষা সক্রিয় রয়েছে। প্রতিটি পদক্ষেপে আপনার অনুমোদন ও ৪ ডিজিটের পিন আবশ্যক।',
       requiresDoubleConfirmation: false,
+      requiresBiometricChallenge: false,
     };
   }
 
@@ -165,11 +199,13 @@ export const stageTransaction = ({
     currentAvailable: user.availableBalance,
     postBalance: user.availableBalance - totalDeduction,
     anomalySignal,
+    riskAssessment,
     voiceBiometric: voiceBiometric || {
-      isVerified: true,
-      confidence: 94.8,
+      isVerified: riskAssessment.breakdown.speakerVerification.matched,
+      confidence: riskAssessment.breakdown.speakerVerification.similarityPercent,
       speaker: user.voiceProfile?.primarySpeaker || user.name || 'ইমরান হোসেন',
-      antiSpoofStatus: 'PASS',
+      antiSpoofStatus: riskAssessment.breakdown.spoofDetection.signalType,
+      spoofPercent: riskAssessment.breakdown.spoofDetection.spoofPercent,
     },
     expiresAt,
     requiresPin: true,

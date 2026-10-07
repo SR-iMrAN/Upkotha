@@ -439,6 +439,7 @@ export default function CashOut() {
           isStrictMode={user?.isStrictMode}
           anomalyWarning={stagedData?.anomalySignal?.messageBangla}
           anomalySignal={stagedData?.anomalySignal}
+          riskAssessment={stagedData?.riskAssessment}
           voiceBiometric={stagedData?.voiceBiometric}
           isLoading={isExecuting}
         />

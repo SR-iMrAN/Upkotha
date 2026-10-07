@@ -14,11 +14,13 @@ import {
   BarChart3,
   X,
   Sparkles,
+  Cpu,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const NAV_ITEMS = [
   { name: 'ড্যাশবোর্ড', nameEn: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'AI আর্কিটেকচার', nameEn: 'AI Architecture', path: '/security-architecture', icon: Cpu },
   { name: 'সেন্ড মানি', nameEn: 'Send Money', path: '/send-money', icon: Send },
   { name: 'ক্যাশ আউট', nameEn: 'Cash Out', path: '/cash-out', icon: ArrowDownToLine },
   { name: 'মানি লক', nameEn: 'Lock Money', path: '/lock-money', icon: Lock },

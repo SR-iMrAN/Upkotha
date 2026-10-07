@@ -214,6 +214,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  extractIntent: (userText, page, action) => request('/ai/intent', { method: 'POST', body: JSON.stringify({ userText, page, action }) }),
+  getInsights: () => request('/ai/insights', { method: 'POST' }),
+  verifyVoice: (payload = {}) => request('/voice/verify', { method: 'POST', body: JSON.stringify(payload) }),
+  getVoiceProfile: () => request('/voice/profile'),
+  enrollVoice: (payload = {}) => request('/voice/enroll', { method: 'POST', body: JSON.stringify(payload) }),
+  getVoiceLogs: () => request('/voice/logs'),
+  getOnboardGreeting: (payload) => request('/voice/onboard-greeting', { method: 'POST', body: JSON.stringify(payload) }),
+  getTtsUrl: (text) => `${API_BASE}/voice/tts?text=${encodeURIComponent(text)}`,
+  analyzeRisk: (payload = {}) => request('/risk/analyze', { method: 'POST', body: JSON.stringify(payload) }),
 
   getVoiceProfile: () =>
     request('/voice/profile'),

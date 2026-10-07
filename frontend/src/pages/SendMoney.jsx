@@ -734,6 +734,10 @@ export default function SendMoney() {
           voiceBiometric={
             stagedData?.voiceBiometric
           }
+          anomalyWarning={stagedData?.anomalySignal?.messageBangla}
+          anomalySignal={stagedData?.anomalySignal}
+          riskAssessment={stagedData?.riskAssessment}
+          voiceBiometric={stagedData?.voiceBiometric}
           isLoading={isExecuting}
         />
       </div>

@@ -15,7 +15,16 @@ const DATA_DIR = isVercel ? path.join('/tmp', 'upkotha_data') : SEED_DATA_DIR;
 class DataStore {
   constructor() {
     this.cache = {};
-    this.collections = ['users', 'contacts', 'agents', 'transactions', 'locks', 'reminders', 'voice_logs'];
+    this.collections = [
+      'users',
+      'contacts',
+      'agents',
+      'transactions',
+      'locks',
+      'reminders',
+      'voice_logs',
+      'impact_events',
+    ];
     this.init();
   }
 
@@ -40,7 +49,7 @@ class DataStore {
           const raw = fs.readFileSync(activeFilePath, 'utf-8');
           this.cache[name] = JSON.parse(raw);
           loaded = true;
-        } catch (err) {}
+        } catch (err) { }
       }
 
       if (!loaded && fs.existsSync(seedFilePath)) {
@@ -51,10 +60,10 @@ class DataStore {
           if (isVercel) {
             try {
               fs.writeFileSync(activeFilePath, raw, 'utf-8');
-            } catch (e) {}
+            } catch (e) { }
           }
           loaded = true;
-        } catch (err) {}
+        } catch (err) { }
       }
 
       if (!loaded) {

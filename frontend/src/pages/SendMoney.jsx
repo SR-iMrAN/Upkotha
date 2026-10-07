@@ -4,14 +4,13 @@ import Layout from '../components/Layout';
 import Button from '../components/Button';
 import ConfirmationModal from '../components/ConfirmationModal';
 import VoiceGuide from '../components/VoiceGuide';
+import CustomerFeedback from '../components/CustomerFeedback';
 import { useAuth } from '../context/AuthContext';
 import { showToast, showAlert } from '../utils/alert';
 import api from '../services/api';
 import {
   Send,
   User,
-  Phone,
-  Volume2,
   Wallet,
   Lock,
   CheckCircle,
@@ -20,6 +19,10 @@ import {
   Sparkles,
   RotateCcw,
 } from 'lucide-react';
+import {
+  createImpactSessionId,
+  getElapsedMs,
+} from '../utils/impactTracking';
 
 const QUICK_AMOUNTS = [100, 500, 1000, 2000, 5000];
 
@@ -42,17 +45,58 @@ export default function SendMoney() {
   // Completed Receipt state
   const [receipt, setReceipt] = useState(null);
 
+  // ==========================================
+  // CUSTOMER IMPACT TRACKING
+  // ==========================================
+
+  const [impactSession, setImpactSession] = useState(null);
+
+  // Start one customer-impact session when Send Money page opens.
+  useEffect(() => {
+    const sessionId = createImpactSessionId('send_money');
+
+    const session = {
+      sessionId,
+      startedAt: Date.now(),
+    };
+
+    setImpactSession(session);
+
+    api.recordImpactEvent({
+      eventType: 'task_started',
+      task: 'send_money',
+      sessionId,
+      source: location.state?.prefill ? 'voice' : 'text',
+    }).catch((error) => {
+      console.warn(
+        '[Impact Tracking] Could not record task start:',
+        error
+      );
+    });
+  }, [location.state]);
+
   const handleSelectContact = (contact) => {
     setSelectedContact(contact);
     setRecipient(contact.name);
     showToast.info(`${contact.name} নির্বাচন করা হয়েছে`);
   };
 
-  const handleValidate = async (e, overrideRecipient, overrideAmount) => {
+  const handleValidate = async (
+    e,
+    overrideRecipient,
+    overrideAmount
+  ) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    const targetRecipient = (overrideRecipient !== undefined ? overrideRecipient : recipient) || '';
-    const targetAmount = overrideAmount !== undefined ? Number(overrideAmount) : Number(amount);
+    const targetRecipient =
+      (overrideRecipient !== undefined
+        ? overrideRecipient
+        : recipient) || '';
+
+    const targetAmount =
+      overrideAmount !== undefined
+        ? Number(overrideAmount)
+        : Number(amount);
 
     if (!targetRecipient.trim()) {
       showToast.error('প্রাপকের নাম বা মোবাইল নম্বর দিন');
@@ -66,6 +110,7 @@ export default function SendMoney() {
 
     try {
       setIsValidating(true);
+
       const res = await api.validateTransaction({
         type: 'send_money',
         recipient: targetRecipient.trim(),
@@ -85,21 +130,35 @@ export default function SendMoney() {
     }
   };
 
-  // Handle voice command prefill
+  // ==========================================
+  // HANDLE VOICE COMMAND PREFILL
+  // ==========================================
+
   useEffect(() => {
     if (location.state?.prefill) {
-      const { recipient: prefillRecipient, amount: prefillAmount } = location.state.prefill;
+      const {
+        recipient: prefillRecipient,
+        amount: prefillAmount,
+      } = location.state.prefill;
+
       let matchedContact = null;
 
       if (prefillRecipient) {
         setRecipient(prefillRecipient);
+
         if (user?.contacts) {
           matchedContact = user.contacts.find(
             (c) =>
-              c.name.toLowerCase().includes(prefillRecipient.toLowerCase()) ||
-              prefillRecipient.toLowerCase().includes(c.name.toLowerCase()) ||
-              c.phone.replace(/[^0-9]/g, '') === prefillRecipient.replace(/[^0-9]/g, '')
+              c.name
+                .toLowerCase()
+                .includes(prefillRecipient.toLowerCase()) ||
+              prefillRecipient
+                .toLowerCase()
+                .includes(c.name.toLowerCase()) ||
+              c.phone.replace(/[^0-9]/g, '') ===
+                prefillRecipient.replace(/[^0-9]/g, '')
           );
+
           if (matchedContact) {
             setSelectedContact(matchedContact);
           }
@@ -113,14 +172,23 @@ export default function SendMoney() {
       showToast.info('ভয়েস কমান্ড থেকে তথ্য পূরণ করা হয়েছে');
 
       if (prefillRecipient && prefillAmount) {
-        handleValidate(null, prefillRecipient, prefillAmount);
+        handleValidate(
+          null,
+          prefillRecipient,
+          prefillAmount
+        );
       }
     }
   }, [location.state, user?.contacts]);
 
+  // ==========================================
+  // CONFIRM PIN + EXECUTE TRANSACTION
+  // ==========================================
+
   const handleConfirmPin = async (pin) => {
     try {
       setIsExecuting(true);
+
       const res = await api.sendMoney({
         stageId: stagedData?.stageId,
         recipient: stagedData?.recipient || recipient,
@@ -128,49 +196,148 @@ export default function SendMoney() {
         pin,
       });
 
-      const targetRecipient = stagedData?.recipient || recipient || 'প্রাপক';
-      const actualAmount = stagedData?.amount || Number(amount);
+      const targetRecipient =
+        stagedData?.recipient || recipient || 'প্রাপক';
+
+      const actualAmount =
+        stagedData?.amount || Number(amount);
 
       const receiptData = res?.receipt || {
-        transactionId: res?.transaction?.id || `TXN-${Date.now().toString().slice(-6)}`,
-        recipient: res?.transaction?.recipient || targetRecipient,
-        amount: res?.transaction?.amount || actualAmount,
+        transactionId:
+          res?.transaction?.id ||
+          `TXN-${Date.now().toString().slice(-6)}`,
+
+        recipient:
+          res?.transaction?.recipient ||
+          targetRecipient,
+
+        amount:
+          res?.transaction?.amount ||
+          actualAmount,
+
         fee: 0,
+
         totalDeduction: actualAmount,
-        newAvailableBalance: res?.newBalance?.available ?? (user?.availableBalance - actualAmount),
-        lockedBalance: res?.newBalance?.locked ?? user?.lockedBalance,
-        dateDisplay: res?.transaction?.dateDisplay || 'আজ, এইমাত্র',
-        explanationBangla: res?.transaction?.explanationBangla || `${targetRecipient}-কে ৳${actualAmount} টাকা সফলভাবে পাঠানো হয়েছে।`,
+
+        newAvailableBalance:
+          res?.newBalance?.available ??
+          (user?.availableBalance - actualAmount),
+
+        lockedBalance:
+          res?.newBalance?.locked ??
+          user?.lockedBalance,
+
+        dateDisplay:
+          res?.transaction?.dateDisplay ||
+          'আজ, এইমাত্র',
+
+        explanationBangla:
+          res?.transaction?.explanationBangla ||
+          `${targetRecipient}-কে ৳${actualAmount} টাকা সফলভাবে পাঠানো হয়েছে।`,
       };
 
       setIsModalOpen(false);
       setReceipt(receiptData);
 
+      // ==========================================
+      // CUSTOMER IMPACT: TASK COMPLETED
+      // ==========================================
+
+      if (impactSession) {
+        api.recordImpactEvent({
+          eventType: 'task_completed',
+          task: 'send_money',
+          sessionId: impactSession.sessionId,
+          durationMs: getElapsedMs(
+            impactSession.startedAt
+          ),
+          success: true,
+          source: location.state?.prefill
+            ? 'voice'
+            : 'text',
+        }).catch((error) => {
+          console.warn(
+            '[Impact Tracking] Could not record task completion:',
+            error
+          );
+        });
+      }
+
+      // Save local transaction history
       if (user?.id) {
-        const storedKey = `upkotha_transactions_${user.id}`;
-        const existing = JSON.parse(localStorage.getItem(storedKey) || '[]');
+        const storedKey =
+          `upkotha_transactions_${user.id}`;
+
+        const existing = JSON.parse(
+          localStorage.getItem(storedKey) || '[]'
+        );
+
         const newTxn = {
           id: receiptData.transactionId,
           type: 'send_money',
           title: `${targetRecipient} (Send Money)`,
           recipient: targetRecipient,
-          recipientPhone: stagedData?.recipientPhone || '',
+          recipientPhone:
+            stagedData?.recipientPhone || '',
           amount: actualAmount,
           fee: 0,
           dateDisplay: 'আজ, এইমাত্র',
           category: 'ব্যক্তিগত',
           categoryKey: 'personal',
           status: 'SUCCESS',
-          explanationBangla: receiptData.explanationBangla
+          explanationBangla:
+            receiptData.explanationBangla,
         };
-        localStorage.setItem(storedKey, JSON.stringify([newTxn, ...existing]));
+
+        localStorage.setItem(
+          storedKey,
+          JSON.stringify([
+            newTxn,
+            ...existing,
+          ])
+        );
       }
 
-      if (receiptData?.newAvailableBalance !== undefined) {
-        updateBalance(receiptData.newAvailableBalance, receiptData.lockedBalance);
+      if (
+        receiptData?.newAvailableBalance !==
+        undefined
+      ) {
+        updateBalance(
+          receiptData.newAvailableBalance,
+          receiptData.lockedBalance
+        );
       }
-      showToast.success('লেনদেন সফলভাবে সম্পন্ন হয়েছে!');
+
+      showToast.success(
+        'লেনদেন সফলভাবে সম্পন্ন হয়েছে!'
+      );
     } catch (err) {
+      // ==========================================
+      // CUSTOMER IMPACT: TASK FAILED
+      // ==========================================
+
+      if (impactSession) {
+        api.recordImpactEvent({
+          eventType: 'task_failed',
+          task: 'send_money',
+          sessionId: impactSession.sessionId,
+          durationMs: getElapsedMs(
+            impactSession.startedAt
+          ),
+          success: false,
+          errorType:
+            err?.code || 'TRANSACTION_FAILED',
+          source: location.state?.prefill
+            ? 'voice'
+            : 'text',
+        }).catch((trackingError) => {
+          console.warn(
+            '[Impact Tracking] Could not record task failure:',
+            trackingError
+          );
+        });
+      }
+
       showAlert({
         title: 'লেনদেন ব্যর্থ হয়েছে',
         text: err.message,
@@ -181,6 +348,10 @@ export default function SendMoney() {
     }
   };
 
+  // ==========================================
+  // RESET FOR ANOTHER TRANSACTION
+  // ==========================================
+
   const handleReset = () => {
     setReceipt(null);
     setStagedData(null);
@@ -188,9 +359,33 @@ export default function SendMoney() {
     setSelectedContact(null);
     setAmount('500');
     setNote('');
+
+    // Start a new impact session for the new transaction.
+    const sessionId =
+      createImpactSessionId('send_money');
+
+    const session = {
+      sessionId,
+      startedAt: Date.now(),
+    };
+
+    setImpactSession(session);
+
+    api.recordImpactEvent({
+      eventType: 'task_started',
+      task: 'send_money',
+      sessionId,
+      source: 'text',
+    }).catch((error) => {
+      console.warn(
+        '[Impact Tracking] Could not record new task start:',
+        error
+      );
+    });
   };
 
-  const formatBDT = (val) => new Intl.NumberFormat('bn-BD').format(val || 0);
+  const formatBDT = (val) =>
+    new Intl.NumberFormat('bn-BD').format(val || 0);
 
   return (
     <Layout
@@ -200,21 +395,28 @@ export default function SendMoney() {
       userName={user?.name}
     >
       <div className="max-w-2xl mx-auto space-y-6">
+
         {/* Contextual Voice Guide */}
         <VoiceGuide
           pageContext="send_money"
           message="যাকে টাকা পাঠাতে চান তার নাম বলুন অথবা contact থেকে নির্বাচন করুন।"
         />
 
-        {/* Balance Status Banner (With Locked Protection Awareness) */}
+        {/* Balance Status Banner */}
         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
               <Wallet className="w-5 h-5" />
             </div>
+
             <div>
-              <span className="text-xs text-slate-500 block">ব্যবহারযোগ্য ব্যালেন্স</span>
-              <span className="text-lg font-bold text-slate-900">৳ {formatBDT(user?.availableBalance)}</span>
+              <span className="text-xs text-slate-500 block">
+                ব্যবহারযোগ্য ব্যালেন্স
+              </span>
+
+              <span className="text-lg font-bold text-slate-900">
+                ৳ {formatBDT(user?.availableBalance)}
+              </span>
             </div>
           </div>
 
@@ -223,13 +425,17 @@ export default function SendMoney() {
               <Lock className="w-3 h-3 text-amber-600" />
               ৳ {formatBDT(user?.lockedBalance)} সুরক্ষিত
             </span>
-            <span className="text-[11px] text-slate-400">লক করা টাকা ব্যয়যোগ্য নয়</span>
+
+            <span className="text-[11px] text-slate-400">
+              লক করা টাকা ব্যয়যোগ্য নয়
+            </span>
           </div>
         </div>
 
-        {/* ─── SUCCESS RECEIPT (After execution) ───────────────── */}
+        {/* SUCCESS RECEIPT */}
         {receipt ? (
           <div className="bg-white rounded-2xl border border-emerald-200 p-6 sm:p-8 shadow-md text-center space-y-5 animate-in fade-in">
+
             <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center">
               <CheckCircle className="w-10 h-10" />
             </div>
@@ -238,44 +444,94 @@ export default function SendMoney() {
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider">
                 সিমুলেটেড লেনদেন সম্পন্ন
               </span>
+
               <h2 className="text-2xl font-extrabold text-slate-900 mt-2">
                 ৳ {formatBDT(receipt.amount)}
               </h2>
+
               <p className="text-xs text-slate-500 mt-1 font-mono">
                 ট্রানজ্যাকশন আইডি: {receipt.transactionId}
               </p>
             </div>
 
-            {/* Receipt Summary Table */}
+            {/* Receipt Summary */}
             <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 text-xs text-left space-y-2">
+
               <div className="flex justify-between">
-                <span className="text-slate-500">প্রাপক:</span>
-                <span className="font-semibold text-slate-900">{receipt.recipient}</span>
+                <span className="text-slate-500">
+                  প্রাপক:
+                </span>
+
+                <span className="font-semibold text-slate-900">
+                  {receipt.recipient}
+                </span>
               </div>
+
               <div className="flex justify-between">
-                <span className="text-slate-500">সময়:</span>
-                <span className="text-slate-700">{receipt.dateDisplay}</span>
+                <span className="text-slate-500">
+                  সময়:
+                </span>
+
+                <span className="text-slate-700">
+                  {receipt.dateDisplay}
+                </span>
               </div>
+
               <div className="flex justify-between">
-                <span className="text-slate-500">সার্ভিস ফি:</span>
-                <span className="font-medium text-emerald-600">৳ ০ (বিনামূল্যে)</span>
+                <span className="text-slate-500">
+                  সার্ভিস ফি:
+                </span>
+
+                <span className="font-medium text-emerald-600">
+                  ৳ ০ (বিনামূল্যে)
+                </span>
               </div>
+
               <div className="flex justify-between pt-2 border-t border-slate-200 font-semibold text-slate-900">
-                <span>নতুন ব্যবহারযোগ্য ব্যালেন্স:</span>
-                <span className="text-emerald-700">৳ {formatBDT(receipt.newAvailableBalance)}</span>
+                <span>
+                  নতুন ব্যবহারযোগ্য ব্যালেন্স:
+                </span>
+
+                <span className="text-emerald-700">
+                  ৳ {formatBDT(
+                    receipt.newAvailableBalance
+                  )}
+                </span>
               </div>
             </div>
 
-            {/* AI Explanation Callout */}
+            {/* AI Explanation */}
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-left text-xs">
               <div className="flex items-center gap-1.5 text-emerald-900 font-semibold mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                <span>উপকথার ব্যাখ্যা:</span>
+
+                <span>
+                  উপকথার ব্যাখ্যা:
+                </span>
               </div>
+
               <p className="text-emerald-800 leading-relaxed font-normal">
                 {receipt.explanationBangla}
               </p>
             </div>
+
+            {/* Customer Feedback */}
+            <CustomerFeedback
+              task="send_money"
+              sessionId={impactSession?.sessionId}
+              durationMs={
+                impactSession
+                  ? getElapsedMs(
+                      impactSession.startedAt
+                    )
+                  : null
+              }
+              source={
+                location.state?.prefill
+                  ? 'voice'
+                  : 'text'
+              }
+            />
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
@@ -287,29 +543,44 @@ export default function SendMoney() {
               >
                 আরেকটি লেনদেন করুন
               </Button>
-              <Link to="/dashboard" className="w-full">
-                <Button variant="primary" fullWidth icon={ArrowRight}>
+
+              <Link
+                to="/dashboard"
+                className="w-full"
+              >
+                <Button
+                  variant="primary"
+                  fullWidth
+                  icon={ArrowRight}
+                >
                   ড্যাশবোর্ডে ফিরুন
                 </Button>
               </Link>
             </div>
           </div>
         ) : (
-          /* ─── SEND MONEY FORM ──────────────────────────────── */
+
+          /* SEND MONEY FORM */
+
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-            {/* Quick Contacts Picker */}
+
+            {/* Quick Contacts */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-2">
                 সংরক্ষিত পরিচিতি থেকে বেছে নিন:
               </label>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {user?.contacts?.map((contact) => (
                   <button
                     key={contact.id}
                     type="button"
-                    onClick={() => handleSelectContact(contact)}
+                    onClick={() =>
+                      handleSelectContact(contact)
+                    }
                     className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition ${
-                      selectedContact?.id === contact.id
+                      selectedContact?.id ===
+                      contact.id
                         ? 'border-emerald-600 bg-emerald-50/70 ring-1 ring-emerald-600'
                         : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
                     }`}
@@ -317,10 +588,12 @@ export default function SendMoney() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-700 text-white font-bold flex items-center justify-center text-xs shrink-0">
                       {contact.avatar}
                     </div>
+
                     <div className="truncate">
                       <span className="block text-xs font-semibold text-slate-800 truncate">
                         {contact.name}
                       </span>
+
                       <span className="block text-[10px] text-slate-400 font-mono truncate">
                         {contact.phone}
                       </span>
@@ -330,14 +603,20 @@ export default function SendMoney() {
               </div>
             </div>
 
-            <form onSubmit={handleValidate} className="space-y-4">
-              {/* Recipient Input */}
+            <form
+              onSubmit={handleValidate}
+              className="space-y-4"
+            >
+
+              {/* Recipient */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   প্রাপকের নাম অথবা মোবাইল নম্বর
                 </label>
+
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+
                   <input
                     type="text"
                     value={recipient}
@@ -351,22 +630,29 @@ export default function SendMoney() {
                 </div>
               </div>
 
-              {/* Amount Input */}
+              {/* Amount */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-semibold text-slate-700">
                     টাকার পরিমাণ (৳)
                   </label>
-                  <span className="text-[11px] text-slate-400">সর্বনিম্ন ৳১০ • সর্বোচ্চ ৳২৫,০০০</span>
+
+                  <span className="text-[11px] text-slate-400">
+                    সর্বনিম্ন ৳১০ • সর্বোচ্চ ৳২৫,০০০
+                  </span>
                 </div>
+
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-base">
                     ৳
                   </span>
+
                   <input
                     type="number"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) =>
+                      setAmount(e.target.value)
+                    }
                     placeholder="500"
                     min="10"
                     max="25000"
@@ -380,7 +666,9 @@ export default function SendMoney() {
                     <button
                       key={q}
                       type="button"
-                      onClick={() => setAmount(q.toString())}
+                      onClick={() =>
+                        setAmount(q.toString())
+                      }
                       className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition ${
                         amount === q.toString()
                           ? 'bg-emerald-700 text-white border-emerald-700'
@@ -393,12 +681,16 @@ export default function SendMoney() {
                 </div>
               </div>
 
-              {/* Strict Mode / Behavioral Warning Preview */}
+              {/* Strict Mode Warning */}
               {Number(amount) >= 5000 && (
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+
                   <p>
-                    <strong>সতর্কতা:</strong> এই পরিমাণ টাকা আপনার গড় খরচের চেয়ে বেশি। নিশ্চিত করার পূর্বে প্রাপক যাচাই করবেন।
+                    <strong>সতর্কতা:</strong>{' '}
+                    এই পরিমাণ টাকা আপনার গড় খরচের
+                    চেয়ে বেশি। নিশ্চিত করার পূর্বে
+                    প্রাপক যাচাই করবেন।
                   </p>
                 </div>
               )}
@@ -417,20 +709,31 @@ export default function SendMoney() {
           </div>
         )}
 
-        {/* High-Security Confirmation Modal with PIN */}
+        {/* High-Security Confirmation Modal */}
         <ConfirmationModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() =>
+            setIsModalOpen(false)
+          }
           onConfirm={handleConfirmPin}
           title="সেন্ড মানি নিশ্চিতকরণ"
           recipient={stagedData?.recipient}
           amount={stagedData?.amount || 0}
           fee={0}
-          availableBalance={user?.availableBalance || 0}
+          availableBalance={
+            user?.availableBalance || 0
+          }
           isStrictMode={user?.isStrictMode}
-          anomalyWarning={stagedData?.anomalySignal?.messageBangla}
-          anomalySignal={stagedData?.anomalySignal}
-          voiceBiometric={stagedData?.voiceBiometric}
+          anomalyWarning={
+            stagedData?.anomalySignal
+              ?.messageBangla
+          }
+          anomalySignal={
+            stagedData?.anomalySignal
+          }
+          voiceBiometric={
+            stagedData?.voiceBiometric
+          }
           isLoading={isExecuting}
         />
       </div>

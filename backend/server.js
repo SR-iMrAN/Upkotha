@@ -10,6 +10,7 @@ import aiRoutes from './routes/aiRoutes.js';
 import voiceRoutes from './routes/voiceRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
+import impactRoutes from './routes/impactRoutes.js';
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use('/api/reminders', reminderRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/impact', impactRoutes);
 
 // Error Handling
 app.use(notFoundHandler);

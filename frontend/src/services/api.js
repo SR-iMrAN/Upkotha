@@ -1,31 +1,40 @@
 /**
  * Centralized API client for UPKOTHA Frontend.
- * Communicates with Express Backend (http://localhost:5000/api).
+ *
+ * Communicates with Express Backend.
  * Automatically handles JSON parsing, headers, and friendly error propagation.
  */
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export const BACKEND_URL = API_BASE.replace(/\/api\/?$/, '');
 
 const BASE_URL = API_BASE;
 
 async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
-  
+
   let currentUserId = 'usr_imran_001';
   let currentUserName = 'ইমরান';
   let currentUserPhone = '01712-345678';
+
   try {
     const saved = localStorage.getItem('upkotha_auth_session');
+
     if (saved) {
       const parsed = JSON.parse(saved);
+
       if (parsed?.id) currentUserId = parsed.id;
       if (parsed?.name) currentUserName = parsed.name;
       if (parsed?.phone) currentUserPhone = parsed.phone;
     }
-  } catch {}
+  } catch {
+    // Ignore invalid localStorage data
+  }
 
   const config = {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       'x-user-id': currentUserId,
@@ -33,79 +42,227 @@ async function request(endpoint, options = {}) {
       'x-user-phone': currentUserPhone,
       ...options.headers,
     },
-    ...options,
   };
 
   try {
     const res = await fetch(url, config);
-    const data = await res.json();
+
+    let data;
+
+    try {
+      data = await res.json();
+    } catch {
+      data = {
+        success: false,
+        message: 'সার্ভার থেকে সঠিক response পাওয়া যায়নি।',
+      };
+    }
 
     if (!res.ok || data.success === false) {
-      const error = new Error(data.message || 'অনুরোধটি সম্পন্ন করা যায়নি।');
+      const error = new Error(
+        data.message || 'অনুরোধটি সম্পন্ন করা যায়নি।'
+      );
+
       error.status = res.status;
       error.code = data.error;
       error.data = data;
+
       throw error;
     }
 
     return data;
   } catch (err) {
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      console.warn('[API WARNING] Backend server unreachable, falling back to local simulation mode');
-      // Simulated fallback error with clear instruction
-      const offlineErr = new Error('ব্যাকএন্ড সার্ভারের সাথে যোগাযোগ করা যায়নি। অনুগ্রহ করে ব্যাকএন্ড চালু করুন (npm start)।');
+    if (
+      err.name === 'TypeError' &&
+      err.message.includes('fetch')
+    ) {
+      console.warn(
+        '[API WARNING] Backend server unreachable.'
+      );
+
+      const offlineErr = new Error(
+        'ব্যাকএন্ড সার্ভারের সাথে যোগাযোগ করা যায়নি। অনুগ্রহ করে ব্যাকএন্ড চালু করুন (npm start)।'
+      );
+
       offlineErr.code = 'BACKEND_OFFLINE';
+
       throw offlineErr;
     }
+
     throw err;
   }
 }
 
 export const api = {
+  // ==========================================
   // Auth
-  login: (phone, pin) => request('/auth/login', { method: 'POST', body: JSON.stringify({ phone, pin }) }),
-  register: (name, phone, pin) => request('/auth/register', { method: 'POST', body: JSON.stringify({ name, phone, pin }) }),
-  getProfile: () => request('/auth/profile'),
+  // ==========================================
 
+  login: (phone, pin) =>
+    request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ phone, pin }),
+    }),
+
+  register: (name, phone, pin) =>
+    request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, phone, pin }),
+    }),
+
+  getProfile: () =>
+    request('/auth/profile'),
+
+  // ==========================================
   // Dashboard
-  getDashboard: () => request('/dashboard'),
+  // ==========================================
 
+  getDashboard: () =>
+    request('/dashboard'),
+
+  // ==========================================
   // Transactions
+  // ==========================================
+
   getTransactions: (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    return request(`/transactions${query ? `?${query}` : ''}`);
+
+    return request(
+      `/transactions${query ? `?${query}` : ''}`
+    );
   },
-  getTransactionById: (id) => request(`/transactions/${id}`),
-  validateTransaction: (payload) => request('/transactions/validate', { method: 'POST', body: JSON.stringify(payload) }),
-  sendMoney: (payload) => request('/transactions/send', { method: 'POST', body: JSON.stringify(payload) }),
-  cashOut: (payload) => request('/transactions/cashout', { method: 'POST', body: JSON.stringify(payload) }),
-  explainTransaction: (id) => request(`/transactions/${id}/explain`, { method: 'POST' }),
 
+  getTransactionById: (id) =>
+    request(`/transactions/${id}`),
+
+  validateTransaction: (payload) =>
+    request('/transactions/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  sendMoney: (payload) =>
+    request('/transactions/send', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  cashOut: (payload) =>
+    request('/transactions/cashout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  explainTransaction: (id) =>
+    request(`/transactions/${id}/explain`, {
+      method: 'POST',
+    }),
+
+  // ==========================================
   // Locks
-  getLocks: () => request('/lock'),
-  createLock: (payload) => request('/lock', { method: 'POST', body: JSON.stringify(payload) }),
-  unlockMoney: (id, payload = {}) => request(`/lock/${id}/unlock`, { method: 'POST', body: JSON.stringify(payload) }),
+  // ==========================================
 
+  getLocks: () =>
+    request('/lock'),
+
+  createLock: (payload) =>
+    request('/lock', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  unlockMoney: (id, payload = {}) =>
+    request(`/lock/${id}/unlock`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // ==========================================
   // Reminders
-  getReminders: () => request('/reminders'),
-  completeReminder: (id, payload = {}) => request(`/reminders/${id}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
+  // ==========================================
 
+  getReminders: () =>
+    request('/reminders'),
+
+  completeReminder: (id, payload = {}) =>
+    request(`/reminders/${id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // ==========================================
   // AI & Voice Biometrics
-  extractIntent: (userText, page, action) => request('/ai/intent', { method: 'POST', body: JSON.stringify({ userText, page, action }) }),
-  getInsights: () => request('/ai/insights', { method: 'POST' }),
-  verifyVoice: (payload = {}) => request('/voice/verify', { method: 'POST', body: JSON.stringify(payload) }),
-  getVoiceProfile: () => request('/voice/profile'),
-  enrollVoice: (payload = {}) => request('/voice/enroll', { method: 'POST', body: JSON.stringify(payload) }),
-  getVoiceLogs: () => request('/voice/logs'),
-  getOnboardGreeting: (payload) => request('/voice/onboard-greeting', { method: 'POST', body: JSON.stringify(payload) }),
-  getTtsUrl: (text) => `${API_BASE}/voice/tts?text=${encodeURIComponent(text)}`,
+  // ==========================================
 
+  extractIntent: (userText, page, action) =>
+    request('/ai/intent', {
+      method: 'POST',
+      body: JSON.stringify({
+        userText,
+        page,
+        action,
+      }),
+    }),
+
+  getInsights: () =>
+    request('/ai/insights', {
+      method: 'POST',
+    }),
+
+  verifyVoice: (payload = {}) =>
+    request('/voice/verify', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getVoiceProfile: () =>
+    request('/voice/profile'),
+
+  enrollVoice: (payload = {}) =>
+    request('/voice/enroll', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getVoiceLogs: () =>
+    request('/voice/logs'),
+
+  getOnboardGreeting: (payload) =>
+    request('/voice/onboard-greeting', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getTtsUrl: (text) =>
+    `${API_BASE}/voice/tts?text=${encodeURIComponent(text)}`,
+
+  // ==========================================
   // Admin Telemetry & Audit
-  getAdminMetrics: () => request('/admin/metrics'),
+  // ==========================================
+
+  getAdminMetrics: () =>
+    request('/admin/metrics'),
+
   getAdminAuditStream: (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    return request(`/admin/audit${query ? `?${query}` : ''}`);
+
+    return request(
+      `/admin/audit${query ? `?${query}` : ''}`
+    );
   },
+
+  // ==========================================
+  // Customer Impact Measurement
+  // ==========================================
+
+  recordImpactEvent: (payload) =>
+    request('/impact/event', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getImpactMetrics: () =>
+    request('/impact/metrics'),
 };
 
 export default api;
